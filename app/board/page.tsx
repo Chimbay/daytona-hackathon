@@ -18,6 +18,10 @@ import { useBoardHistory } from "@/lib/useBoardHistory";
 
 type Line = { speaker?: string; text: string };
 
+const THEMES = [["sky", "Sky (default)"], ["gruvbox", "Gruvbox"], ["catppuccin", "Catppuccin"]] as const;
+type Theme = (typeof THEMES)[number][0];
+const THEME_KEY = "imaginar-theme";
+
 // Offline scripted demos, stepped with arrows; no network at all.
 const scripts: { name: string; steps: Step[] }[] = [
   { name: "Main brainstorm", steps: demoScript },
@@ -141,6 +145,20 @@ export default function Home() {
   const [current, setCurrent] = useState("");
   const skipSave = useRef(false); // reopening shouldn't bump the discussion to the top
   useEffect(() => setSaved(discussions.list()), []); // eslint-disable-line react-hooks/set-state-in-effect
+
+  // Test themes: data-theme on <html> while the board is open (navbar included); removed on leave.
+  const [theme, setTheme] = useState<Theme>("sky");
+  useEffect(() => setTheme((localStorage.getItem(THEME_KEY) as Theme) ?? "sky"), []); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    const html = document.documentElement;
+    if (theme === "sky") delete html.dataset.theme;
+    else html.dataset.theme = theme;
+    return () => void delete html.dataset.theme;
+  }, [theme]);
+  const pickTheme = (t: Theme) => {
+    setTheme(t);
+    localStorage.setItem(THEME_KEY, t);
+  };
   useEffect(() => {
     if (skipSave.current) return void (skipSave.current = false);
     if (!board.nodes.length && !lines.length) return;
@@ -217,7 +235,7 @@ export default function Home() {
         onRename={(id, title) => setSaved(discussions.rename(id, title))}
         onRemove={removeDiscussion}
       />
-      <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-white/60 p-6 shadow-[0_1px_2px_rgba(60,70,120,0.05),0_18px_48px_-18px_rgba(90,100,160,0.28)] ring-1 ring-white/90 backdrop-blur-md dark:bg-[rgba(30,36,78,0.45)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2),0_18px_48px_-18px_rgba(0,0,0,0.6)] dark:ring-white/10">
+      <section className="board-canvas relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-white/60 p-6 shadow-[0_1px_2px_rgba(60,70,120,0.05),0_18px_48px_-18px_rgba(90,100,160,0.28)] ring-1 ring-white/90 backdrop-blur-md dark:bg-[rgba(30,36,78,0.45)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2),0_18px_48px_-18px_rgba(0,0,0,0.6)] dark:ring-white/10">
         <Board board={replay.shown ?? board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
         <EmptyHint show={board.nodes.length === 0} />
         {/* Live captions so the room sees words land before the board redraws. */}
@@ -275,6 +293,13 @@ export default function Home() {
 
         <TypeInput speaker={speaker} onSend={(text) => onChunk({ text })} />
         <ExportMenu board={board} lines={lines} />
+
+        <label className="flex items-center gap-2 text-xs text-zinc-500">
+          Theme
+          <select value={theme} onChange={(e) => pickTheme(e.target.value as Theme)} className="rounded border bg-transparent px-1 py-0.5">
+            {THEMES.map(([t, name]) => <option key={t} value={t}>{name}</option>)}
+          </select>
+        </label>
 
         <details className="rounded-lg border px-3 py-2">
           <summary className="cursor-pointer text-xs text-zinc-500">Fallbacks</summary>
