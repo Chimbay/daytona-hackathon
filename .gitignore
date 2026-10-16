@@ -6,3 +6,15 @@ node_modules/
 .agents/
 .claude/skills/
 timeline.md
+
+# next.js
+/.next/
+/out/
+/build
+/coverage
+.DS_Store
+*.pem
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+npm-debug.log*
