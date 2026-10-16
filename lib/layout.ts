@@ -4,7 +4,7 @@ import { visibleNodes, type Board, type BoardNode } from "./board";
 export const NODE_W = 220;
 
 export type Placed = BoardNode & { x: number; y: number; h: number };
-export type PlacedEdge = { key: string; d: string; label?: string };
+export type PlacedEdge = { key: string; d: string; label?: string; mx: number; my: number };
 
 // shortcut: height guessed from label length, not measured; measure DOM if labels overflow.
 const nodeHeight = (n: BoardNode) =>
@@ -33,7 +33,7 @@ export function layoutBoard(board: Board) {
     if (!a || !b) return [];
     const x1 = a.x + NODE_W, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2;
     const mx = (x1 + x2) / 2;
-    return [{ key: `${e.from}->${e.to}`, label: e.label, d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}` }];
+    return [{ key: `${e.from}->${e.to}`, label: e.label, mx, my: (y1 + y2) / 2, d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}` }];
   });
 
   const { width = 0, height = 0 } = g.graph();

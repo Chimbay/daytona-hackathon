@@ -50,6 +50,19 @@ export default function Board({ board }: { board: BoardData }) {
                 className="stroke-zinc-400 dark:stroke-zinc-600"
               />
             ))}
+            {edges.filter((e) => e.label).map((e) => (
+              <motion.text
+                key={`${e.key}-label`}
+                initial={{ x: e.mx, y: e.my - 6, opacity: 0 }}
+                animate={{ x: e.mx, y: e.my - 6, opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={spring}
+                textAnchor="middle"
+                className="fill-zinc-500 text-xs"
+              >
+                {e.label}
+              </motion.text>
+            ))}
           </AnimatePresence>
         </svg>
   
