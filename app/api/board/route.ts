@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import { boardEdits } from "@/lib/brain";
+import { recordEdits, validSessionId } from "@/lib/memory";
 import type { Board } from "@/lib/board";
 
 export async function POST(req: Request) {
@@ -9,7 +11,11 @@ export async function POST(req: Request) {
     return Response.json({ error: "expected { board: { nodes, edges }, chunk: { speaker?, text } }" }, { status: 400 });
 
   try {
-    return Response.json(await boardEdits(board, { speaker: chunk.speaker, text: chunk.text }));
+    const result = await boardEdits(board, { speaker: chunk.speaker, text: chunk.text });
+    // Memory writes take ~1s; persist after responding so the board isn't held up.
+    if (validSessionId(body.sessionId) && result.edits.length)
+      after(() => recordEdits(body.sessionId, result.edits, "board-agent").catch((e) => console.error("memory write failed", e)));
+    return Response.json(result);
   } catch (err) {
     console.error("board brain failed", err);
     return Response.json({ error: "model call failed" }, { status: 502 });

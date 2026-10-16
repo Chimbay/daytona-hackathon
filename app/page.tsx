@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import Board from "./components/Board";
-import { applyEdits, emptyBoard, type Board as BoardData, type Edit } from "@/lib/board";
+import { applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { demoScript } from "@/lib/demo-script";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
 
@@ -24,6 +24,9 @@ export default function Home() {
   const [speaker, setSpeaker] = useState("Maya");
   const speakerRef = useRef(speaker);
   const [step, setStep] = useState(0);
+  // One memory session per board, created on first use (not at prerender); Reset starts a new one.
+  const session = useRef("");
+  const sid = () => (session.current ||= crypto.randomUUID());
   // Chunks are handled one at a time so each Claude call sees the board the previous one produced.
   const queue = useRef<Promise<void>>(Promise.resolve());
 
@@ -37,11 +40,8 @@ export default function Home() {
     async ({ question, nodeId }: { question: string; nodeId: string }) => {
       note(`Researching: ${question}`);
       try {
-        const { fact, source } = await post<{ fact: string; source: string }>("/api/research", { question });
-        apply([
-          { op: "add", node: { id: `fact-${nodeId}`, label: fact, kind: "fact", source } },
-          { op: "link", from: nodeId, to: `fact-${nodeId}` },
-        ]);
+        const { fact, source } = await post<{ fact: string; source: string }>("/api/research", { question, sessionId: sid(), nodeId });
+        apply(factEdits(nodeId, fact, source));
         note(`Pinned: ${fact}`);
       } catch (e) {
         note(`No answer for "${question}": ${(e as Error).message}`);
@@ -59,6 +59,7 @@ export default function Home() {
           const r = await post<{ edits: Edit[]; research?: { question: string; nodeId: string } }>("/api/board", {
             board: boardRef.current,
             chunk: line,
+            sessionId: sid(),
           });
           apply(r.edits);
           // Research runs alongside later chunks; it only adds its own fact node.
@@ -82,6 +83,7 @@ export default function Home() {
     setLines([]);
     setNotes([]);
     setStep(0);
+    session.current = "";
   };
 
   // Fallback: play the recorded brainstorm aloud and transcribe it through the same path as the mic.
@@ -109,7 +111,7 @@ export default function Home() {
         <Board board={board} />
       </section>
 
-      <aside className="flex w-full flex-col gap-3 text-sm md:w-80">
+      <aside className="flex w-full shrink-0 flex-col gap-3 text-sm md:w-80">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => (live ? stop() : void startMic())}

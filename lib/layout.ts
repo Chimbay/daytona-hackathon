@@ -36,6 +36,7 @@ export function layoutBoard(board: Board) {
     return [{ key: `${e.from}->${e.to}`, label: e.label, mx, my: (y1 + y2) / 2, d: `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}` }];
   });
 
-  const { width = 0, height = 0 } = g.graph();
+  // dagre reports ±Infinity for an empty graph.
+  const { width = 0, height = 0 } = placed.length ? g.graph() : {};
   return { nodes: placed, edges, width, height };
 }

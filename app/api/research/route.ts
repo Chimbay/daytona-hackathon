@@ -5,6 +5,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Daytona } from "@daytona/sdk";
+import { after } from "next/server";
+import { factEdits } from "@/lib/board";
+import { recordEdits, validSessionId } from "@/lib/memory";
 
 export const maxDuration = 60;
 
@@ -36,7 +39,7 @@ async function createSandbox(daytona: Daytona) {
 }
 
 export async function POST(req: Request) {
-  const { question } = await req.json().catch(() => ({}));
+  const { question, sessionId, nodeId } = await req.json().catch(() => ({}));
   if (typeof question !== "string" || !question.trim() || question.length > 500) {
     return Response.json({ error: "question must be a non-empty string (max 500 chars)" }, { status: 400 });
   }
@@ -54,6 +57,8 @@ export async function POST(req: Request) {
     if (r.exitCode !== 0) return Response.json({ error: `research agent failed: ${r.result.slice(-300)}` }, { status: 502 });
     const out = JSON.parse(r.result.trim().split("\n").pop()!);
     if (out.error) return Response.json({ error: out.error }, { status: 404 });
+    if (validSessionId(sessionId) && typeof nodeId === "string")
+      after(() => recordEdits(sessionId, factEdits(nodeId, out.fact, out.source), "research-agent").catch((e) => console.error("memory write failed", e)));
     return Response.json({ fact: out.fact, source: out.source });
   } finally {
     await sandbox.delete().catch(() => {});

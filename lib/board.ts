@@ -71,3 +71,9 @@ export function applyEdits(board: Board, edits: Edit[], now = Date.now()): Board
   }
   return { nodes, edges };
 }
+
+// A researched answer pinned to the question node it answers; shared by the page and memory.
+export const factEdits = (nodeId: string, fact: string, source: string): Edit[] => [
+  { op: "add", node: { id: `fact-${nodeId}`, label: fact, kind: "fact", source } },
+  { op: "link", from: nodeId, to: `fact-${nodeId}` },
+];
