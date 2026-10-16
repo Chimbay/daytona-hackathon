@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { boardEdits } from "@/lib/brain";
 import { recordEdits, validSessionId } from "@/lib/memory";
+import { flushTraces } from "@/lib/tracing";
 import type { Board } from "@/lib/board";
 
 export async function POST(req: Request) {
@@ -10,6 +11,7 @@ export async function POST(req: Request) {
   if (!board || !Array.isArray(board.nodes) || !Array.isArray(board.edges) || typeof chunk?.text !== "string")
     return Response.json({ error: "expected { board: { nodes, edges }, chunk: { speaker?, text } }" }, { status: 400 });
 
+  after(flushTraces);
   try {
     const result = await boardEdits(board, { speaker: chunk.speaker, text: chunk.text });
     // Memory writes take ~1s; persist after responding so the board isn't held up.
