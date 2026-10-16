@@ -50,8 +50,8 @@ export default function Home() {
       note(`Researching: ${question}`);
       setPending((p) => new Set(p).add(nodeId));
       try {
-        const { fact, source } = await post<{ fact: string; source: string }>("/api/research", { question, sessionId: sid(), nodeId });
-        apply(factEdits(nodeId, fact, source));
+        const { fact, source, snapshot } = await post<{ fact: string; source: string; snapshot?: string }>("/api/research", { question, sessionId: sid(), nodeId });
+        apply(factEdits(nodeId, fact, source, snapshot));
         note(`Pinned: ${fact}`);
       } catch (e) {
         note(`No answer for "${question}": ${(e as Error).message}`);

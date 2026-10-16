@@ -9,6 +9,7 @@ export type BoardNode = {
   speaker?: string; // provenance for ideas/questions
   quote?: string;
   source?: string; // provenance for researched facts (URL)
+  snapshot?: string; // image data URL of the source page, as the research browser saw it
   createdAt: number;
   supersededBy?: string; // kept for idea history; hidden from the board
 };
@@ -73,8 +74,8 @@ export function applyEdits(board: Board, edits: Edit[], now = Date.now()): Board
 }
 
 // A researched answer pinned to the question node it answers; shared by the page and memory.
-export const factEdits = (nodeId: string, fact: string, source: string): Edit[] => [
-  { op: "add", node: { id: `fact-${nodeId}`, label: fact, kind: "fact", source } },
+export const factEdits = (nodeId: string, fact: string, source: string, snapshot?: string): Edit[] => [
+  { op: "add", node: { id: `fact-${nodeId}`, label: fact, kind: "fact", source, ...(snapshot && { snapshot }) } },
   { op: "link", from: nodeId, to: `fact-${nodeId}` },
 ];
 

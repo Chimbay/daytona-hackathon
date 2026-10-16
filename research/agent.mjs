@@ -56,7 +56,19 @@ async function openPage(cdp) {
   await s("Network.enable");
   // Daytona shows a browser interstitial on preview URLs; this header skips it.
   await s("Network.setExtraHTTPHeaders", { headers: { "X-Daytona-Skip-Preview-Warning": "true" } });
+  await s("Emulation.setDeviceMetricsOverride", { width: 800, height: 600, deviceScaleFactor: 1, mobile: false });
   return {
+    // JPEG data URL of the answer block ([data-fact]) with some context around it, else the page top.
+    async snapshot() {
+      const r = await this.eval(`(() => { const e = document.querySelector("[data-fact]"); if (!e) return null;
+        e.scrollIntoView({ block: "center" }); const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; })()`);
+      const pad = 48;
+      const clip = r
+        ? { x: Math.max(0, r.x - pad), y: Math.max(0, r.y - pad), width: Math.min(800, r.w + 2 * pad), height: r.h + 2 * pad, scale: 1 }
+        : { x: 0, y: 0, width: 800, height: 400, scale: 1 };
+      const { data } = await s("Page.captureScreenshot", { format: "jpeg", quality: 70, clip });
+      return `data:image/jpeg;base64,${data}`;
+    },
     async goto(url) {
       const loaded = cdp.once("Page.loadEventFired");
       await s("Page.navigate", { url });
@@ -95,9 +107,16 @@ async function research(question, wiki) {
         fact: doc.querySelector("[data-fact]")?.textContent.trim() ?? null,
         text: doc.body.textContent.replace(/\\s+/g, " ").trim() };
     }))`);
+    // A visible snippet of each page as Anchor rendered it; the route keeps only the one it cites.
+    const snapshots = {};
+    for (const p of pages) {
+      await page.goto(p.href);
+      snapshots[p.href] = await page.snapshot().catch(() => null);
+    }
     const best = pages.find((p) => p.href === bestLink(question, pages));
     return {
       pages: pages.map(({ href, title, text }) => ({ href, title, text })),
+      snapshots,
       fallback: best?.fact ? { fact: best.fact, source: best.href } : null,
     };
   } finally {
