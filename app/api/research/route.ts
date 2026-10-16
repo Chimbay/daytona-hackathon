@@ -9,11 +9,14 @@ import { join } from "node:path";
 import { Daytona } from "@daytona/sdk";
 import { after } from "next/server";
 import { factEdits } from "@/lib/board";
+import { parseJson, upstreamError } from "@/lib/errors";
 import { recordEdits, validSessionId } from "@/lib/memory";
-import { answer, type Answer } from "@/lib/research";
+import { answer, type Answer, type Page } from "@/lib/research";
 import { flushTraces, setOutput, withSpan } from "@/lib/tracing";
 
-export const maxDuration = 60;
+// Sandbox create + 45s agent + answer() + delete can pass 60s; if the platform kills the
+// function, the finally that deletes the sandbox never runs.
+export const maxDuration = 90;
 
 const SECRET = "anchor-api-key";
 // Anchor REST + CDP websocket. The wiki is fetched by Anchor's cloud browser, not the sandbox.
@@ -43,12 +46,14 @@ async function createSandbox(daytona: Daytona) {
 }
 
 export async function POST(req: Request) {
-  const { question, sessionId, nodeId } = await req.json().catch(() => ({}));
+  const { question, sessionId, nodeId } = (await req.json().catch(() => null)) ?? {};
   if (typeof question !== "string" || !question.trim() || question.length > 500) {
     return Response.json({ error: "question must be a non-empty string (max 500 chars)" }, { status: 400 });
   }
   const wiki = process.env.WIKI_URL;
   if (!wiki) return Response.json({ error: "WIKI_URL not set" }, { status: 500 });
+  // Without it ensureSecret would store "undefined" as the Daytona secret, and never fix it later.
+  if (!process.env.ANCHOR_API_KEY) return Response.json({ error: "ANCHOR_API_KEY not set" }, { status: 500 });
 
   after(flushTraces);
   return withSpan("research", "TOOL", { question }, async (span) => {
@@ -58,7 +63,8 @@ export async function POST(req: Request) {
       "tool.parameters": JSON.stringify({ question: "string" }),
     });
     const t0 = Date.now();
-    const res = await research(question, wiki, sessionId, nodeId);
+    // Daytona create/exec failures (quota, timeout, network) become a JSON 502/504, not an HTML 500.
+    const res = await research(question, wiki, sessionId, nodeId).catch((e) => upstreamError("research", e));
     const out = await res.clone().json();
     setOutput(span, out, {
       "research.duration_ms": Date.now() - t0,
@@ -79,8 +85,19 @@ async function research(question: string, wiki: string, sessionId: unknown, node
     // Inputs go in as env vars, never interpolated into the shell command. Sandbox egress (and the
     // secret substitution) goes through Daytona's HTTPS proxy, which Node only uses with NODE_USE_ENV_PROXY.
     const r = await sandbox.process.executeCommand('NODE_USE_ENV_PROXY=1 node agent.mjs "$QUESTION" "$WIKI_URL"', undefined, { QUESTION: question, WIKI_URL: wiki }, 45);
-    if (r.exitCode !== 0) return Response.json({ error: `research agent failed: ${r.result.slice(-300)}` }, { status: 502 });
-    const { pages, snapshots, fallback } = JSON.parse(r.result.trim().split("\n").pop()!);
+    // Agent output can echo Anchor error bodies: log it, don't send it to the browser.
+    if (r.exitCode !== 0) {
+      console.error(`research agent exited ${r.exitCode}: ${r.result.slice(-300)}`);
+      return Response.json({ error: "research agent failed" }, { status: 502 });
+    }
+    const parsed = parseJson(r.result.trim().split("\n").pop()) as
+      | { pages?: Page[]; snapshots?: Record<string, string | null>; fallback?: Answer }
+      | undefined;
+    if (!parsed || typeof parsed !== "object") {
+      console.error(`research agent printed no JSON: ${r.result.slice(-300)}`);
+      return Response.json({ error: "research agent returned bad output" }, { status: 502 });
+    }
+    const { pages = [], snapshots, fallback = null } = parsed;
     let out: Answer;
     try {
       out = await answer(question, pages);
