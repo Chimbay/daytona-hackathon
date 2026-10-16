@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@dagrejs/dagre": "^3.1.1",
+    "@elevenlabs/client": "^1.28.0",
     "motion": "^14.3.0",
     "next": "16.4.2",
     "react": "19.3.0",
