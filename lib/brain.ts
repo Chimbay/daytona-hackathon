@@ -1,5 +1,5 @@
 import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk";
-import type { Board, BoardNode, Edit } from "./board.ts";
+import { looseIds, visibleNodes, type Board, type BoardNode, type Edit } from "./board.ts";
 import { demoScript } from "./demo-script.ts";
 import { setOutput, withSpan } from "./tracing.ts";
 
@@ -25,7 +25,8 @@ Rules:
 - Reuse existing node ids exactly. New ids are short kebab-case and must not collide with any existing id.
 - Labels are short: 2-6 words, like a sticky note.
 - Every new idea/question carries provenance: "speaker" (the chunk's speaker) and "quote" (the exact words from the chunk that support it).
-- Link new nodes to the idea they relate to ("link" from parent to child).
+- Link new nodes to the idea they relate to ("link" from parent to child). If a new idea doesn't clearly relate to anything on the board yet, add it with no link: it floats loose beside the board. Don't force a weak connection.
+- Ideas listed in "loose" are floating unconnected. As soon as the conversation makes clear where one belongs, "link" it from its parent (or link a loose idea as the parent of others). Never re-add it.
 - Chit-chat, filler or repetition: return no edits.
 - If someone asks a question that needs the team's internal/company data (revenue, metrics, customers, internal docs, plans), add it as a "question" node and set "research" to { question, nodeId } with that node's id. General-knowledge or rhetorical questions get no research.
 - Facts are only added by the research agent, never by you.
@@ -95,7 +96,7 @@ export function boardEdits(board: Board, chunk: Chunk): Promise<BrainResult> {
 }
 
 async function callModel(board: Board, chunk: Chunk): Promise<BrainResult> {
-  const live = board.nodes.filter((n) => !n.supersededBy).map(({ id, label, kind }) => ({ id, label, kind }));
+  const live = visibleNodes(board).map(({ id, label, kind }) => ({ id, label, kind }));
   const res = await client.messages.create({
     model: MODEL,
     max_tokens: 2000,
@@ -105,7 +106,7 @@ async function callModel(board: Board, chunk: Chunk): Promise<BrainResult> {
     messages: [
       {
         role: "user",
-        content: `Board: ${JSON.stringify({ nodes: live, edges: board.edges })}\n\n${chunk.speaker ?? "Someone"}: "${chunk.text}"`,
+        content: `Board: ${JSON.stringify({ nodes: live, edges: board.edges, loose: [...looseIds(board)] })}\n\n${chunk.speaker ?? "Someone"}: "${chunk.text}"`,
       },
     ],
   });

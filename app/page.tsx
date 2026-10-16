@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import Board from "./components/Board";
 import HistoryPanel from "./components/HistoryPanel";
-import { applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
+import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { demoScript } from "@/lib/demo-script";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
 
@@ -34,9 +34,13 @@ export default function Home() {
   // Card whose memory history is open; the session is captured at click time.
   const [history, setHistory] = useState<{ id: string; session: string } | null>(null);
   const closeHistory = useCallback(() => setHistory(null), []);
-
   const apply = useCallback((edits: Edit[]) => {
     boardRef.current = applyEdits(boardRef.current, edits);
+    setBoard(boardRef.current);
+  }, []);
+  // Switching to another version of an idea changes the real board, so the next chunk builds on it.
+  const switchTo = useCallback((id: string) => {
+    boardRef.current = activate(boardRef.current, id);
     setBoard(boardRef.current);
   }, []);
   const note = (s: string) => setNotes((n) => [s, ...n].slice(0, 5));
@@ -97,6 +101,7 @@ export default function Home() {
     setPending(new Set());
     setStep(0);
     setHistory(null);
+
     session.current = "";
   };
 
@@ -122,7 +127,7 @@ export default function Home() {
   return (
     <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
       <section className="min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
-        <Board board={board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} />
+        <Board board={board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
       </section>
 
       <aside className="flex w-full shrink-0 flex-col gap-3 text-sm md:w-80">
