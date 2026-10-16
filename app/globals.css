@@ -94,3 +94,141 @@ body {
     border-color: color-mix(in srgb, var(--ink) 16%, transparent);
   }
 }
+
+/* ---------- Test themes (board page only; set as data-theme on <html> by app/board/page.tsx) ----------
+   Both are dark palettes, so they force Tailwind's dark: variants on (see @custom-variant below) and then
+   remap the Tailwind colors the board uses onto the theme. With no data-theme, nothing here applies. */
+
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    @slot;
+  }
+  &:where([data-theme] *) {
+    @slot;
+  }
+}
+
+html[data-theme="gruvbox"] {
+  --t-bg0: #1d2021;
+  --t-bg1: #282828;
+  --t-bg2: #3c3836;
+  --t-bg3: #504945;
+  --t-bg4: #665c54;
+  --t-fg: #ebdbb2;
+  --t-fg2: #d5c4a1;
+  --t-muted: #a89984;
+  --t-dim: #7c6f64;
+  --t-accent: #fabd2f;
+  --t-accent-ink: #282828;
+  --t-blue: #83a598;
+  --t-yellow: #fabd2f;
+  --t-purple: #d3869b;
+  --t-red: #fb4934;
+  --t-b0: #83a598;
+  --t-b1: #8ec07c;
+  --t-b2: #d3869b;
+  --t-b3: #fe8019;
+  --t-b4: #b8bb26;
+  --t-b5: #fabd2f;
+}
+
+html[data-theme="catppuccin"] {
+  --t-bg0: #11111b;
+  --t-bg1: #1e1e2e;
+  --t-bg2: #313244;
+  --t-bg3: #45475a;
+  --t-bg4: #585b70;
+  --t-fg: #cdd6f4;
+  --t-fg2: #bac2de;
+  --t-muted: #a6adc8;
+  --t-dim: #7f849c;
+  --t-accent: #cba6f7;
+  --t-accent-ink: #1e1e2e;
+  --t-blue: #89b4fa;
+  --t-yellow: #f9e2af;
+  --t-purple: #cba6f7;
+  --t-red: #f38ba8;
+  --t-b0: #89b4fa;
+  --t-b1: #94e2d5;
+  --t-b2: #f5c2e7;
+  --t-b3: #fab387;
+  --t-b4: #a6e3a1;
+  --t-b5: #b4befe;
+}
+
+/* Same selector on .board-sky so it beats that block's own sky tints. */
+html[data-theme],
+html[data-theme] .board-sky {
+  color-scheme: dark;
+  --ink: var(--t-fg);
+  --foreground: var(--t-accent);
+  --background: var(--t-accent-ink);
+  --color-white: var(--t-bg1);
+  --color-black: var(--t-bg0);
+  --color-zinc-50: var(--t-bg2);
+  --color-zinc-100: var(--t-bg2);
+  --color-zinc-200: var(--t-bg3);
+  --color-zinc-300: var(--t-fg2);
+  --color-zinc-400: var(--t-muted);
+  --color-zinc-500: var(--t-muted);
+  --color-zinc-600: var(--t-dim);
+  --color-zinc-700: var(--t-bg4);
+  --color-zinc-800: var(--t-bg3);
+  --color-zinc-900: var(--t-bg2);
+  --color-zinc-950: var(--t-bg1);
+  --color-sky-200: var(--t-blue);
+  --color-sky-300: var(--t-blue);
+  --color-sky-400: var(--t-blue);
+  --color-sky-500: var(--t-blue);
+  --color-sky-700: color-mix(in srgb, var(--t-blue) 55%, var(--t-bg1));
+  --color-sky-900: color-mix(in srgb, var(--t-blue) 30%, var(--t-bg1));
+  --color-sky-950: color-mix(in srgb, var(--t-blue) 14%, var(--t-bg1));
+  --color-amber-400: var(--t-yellow);
+  --color-amber-600: color-mix(in srgb, var(--t-yellow) 60%, var(--t-bg1));
+  --color-amber-700: color-mix(in srgb, var(--t-yellow) 45%, var(--t-bg1));
+  --color-amber-950: color-mix(in srgb, var(--t-yellow) 12%, var(--t-bg1));
+  --color-violet-200: var(--t-purple);
+  --color-violet-300: var(--t-purple);
+  --color-violet-400: var(--t-purple);
+  --color-violet-500: var(--t-purple);
+  --color-violet-600: var(--t-purple);
+  --color-violet-900: color-mix(in srgb, var(--t-purple) 30%, var(--t-bg1));
+  --color-violet-950: color-mix(in srgb, var(--t-purple) 16%, var(--t-bg1));
+  --color-red-600: var(--t-red);
+  --branch-0: var(--t-b0);
+  --branch-1: var(--t-b1);
+  --branch-2: var(--t-b2);
+  --branch-3: var(--t-b3);
+  --branch-4: var(--t-b4);
+  --branch-5: var(--t-b5);
+}
+
+html[data-theme] body {
+  background: var(--t-bg0);
+  color: var(--t-fg);
+}
+
+html[data-theme] .board-sky::before {
+  background: var(--t-bg0);
+}
+
+/* Unlayered, so these beat the arbitrary-value utilities on the canvas and navbar. */
+html[data-theme] .board-canvas {
+  background: var(--t-bg1);
+  box-shadow: 0 0 0 1px var(--t-bg3);
+}
+
+html[data-theme] nav[aria-label="Main"] {
+  background: color-mix(in srgb, var(--t-bg1) 85%, transparent);
+  border-color: var(--t-bg3);
+  box-shadow: none;
+}
+
+html[data-theme] nav[aria-label="Main"] a {
+  color: var(--t-fg2);
+}
+
+html[data-theme] nav[aria-label="Main"] a[aria-current="page"] {
+  background: var(--t-accent);
+  color: var(--t-accent-ink);
+}
