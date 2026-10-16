@@ -10,19 +10,25 @@ export type ScribeHandlers = {
   onClose?: () => void;
 };
 
+// Mic-only voice detection tuning: pause length before a phrase is committed, and how loud
+// speech must be to count (higher ignores more room noise).
+export type Vad = { silenceSecs?: number; threshold?: number };
+
 export const SAMPLE_RATE = 16000;
 const MODEL_ID = "scribe_v2_realtime";
 // VAD commits on pauses, so a mic stream and a replayed clip yield the same segments.
 const base = { modelId: MODEL_ID, commitStrategy: CommitStrategy.VAD, languageCode: "en" };
 
 // Realtime Scribe has no diarization option, so speaker stays undefined.
-export function openScribe(token: string, mode: "mic" | "pcm", h: ScribeHandlers) {
+export function openScribe(token: string, mode: "mic" | "pcm", h: ScribeHandlers, vad: Vad = {}) {
   const conn =
     mode === "mic"
       ? Scribe.connect({
           ...base,
           token,
           microphone: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          ...(vad.silenceSecs && { vadSilenceThresholdSecs: vad.silenceSecs }),
+          ...(vad.threshold && { vadThreshold: vad.threshold }),
         })
       : Scribe.connect({ ...base, token, audioFormat: AudioFormat.PCM_16000, sampleRate: SAMPLE_RATE });
 

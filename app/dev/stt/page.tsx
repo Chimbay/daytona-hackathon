@@ -13,7 +13,7 @@ export default function SttDev() {
     <main className="mx-auto flex max-w-2xl flex-col gap-4 p-6">
       <h1 className="text-xl font-semibold">STT dev</h1>
       <div className="flex flex-wrap items-center gap-2">
-        <button className="rounded border px-3 py-1" onClick={stt.startMic}>Mic</button>
+        <button className="rounded border px-3 py-1" onClick={() => void stt.startMic()}>Mic</button>
         <input
           aria-label="Audio file"
           type="file"
