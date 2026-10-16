@@ -10,6 +10,7 @@
     "test": "node --test lib/*.test.ts"
   },
   "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.35.0",
     "@dagrejs/dagre": "^3.1.1",
     "@elevenlabs/client": "^1.28.0",
     "motion": "^14.3.0",
