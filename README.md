@@ -1,4 +1,4 @@
-# Live Brainstorm Whiteboard
+# Imaginar
 
 A whiteboard that listens to a group brainstorm and keeps redrawing itself to match where the conversation is now. When the group changes its mind, the old idea is **superseded**, not appended. When someone asks a question that needs internal data ("What was our Q3 revenue?"), a research agent reads the team's wiki from an ephemeral Daytona sandbox through an Anchor cloud browser and pins the answer to the board with its source.
 

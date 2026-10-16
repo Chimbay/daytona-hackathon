@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Brainstorm Board",
+  title: "Imaginar",
   description: "A whiteboard that redraws itself as a group brainstorms",
 };
 

@@ -1,4 +1,4 @@
-# Live Brainstorm Whiteboard — Daytona HackSprint NYC (Oct 16 2026)
+# Imaginar — Daytona HackSprint NYC (Oct 16 2026)
 
 A whiteboard that listens to a group brainstorming out loud and keeps redrawing itself to match the idea being discussed. When someone asks a question that needs internal data ("how does our Q3 look?"), an agent looks it up in the team's private sources from a locked-down sandbox and pins the answer to the board with its source.
 
