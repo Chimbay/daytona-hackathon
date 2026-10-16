@@ -4,6 +4,9 @@ import { useCallback, useRef, useState } from "react";
 import Board from "../components/Board";
 import HistoryPanel from "../components/HistoryPanel";
 import MicMeter from "../components/MicMeter";
+import TypeInput from "../components/TypeInput";
+import EmptyHint from "../components/EmptyHint";
+import ExportMenu from "../components/ExportMenu";
 import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { demoScript } from "@/lib/demo-script";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
@@ -147,6 +150,7 @@ export default function Home() {
     <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
       <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
         <Board board={board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
+        <EmptyHint show={board.nodes.length === 0} />
         {/* Live captions so the room sees words land before the board redraws. */}
         {(partial || (live && lines.length > 0)) && (
           <p
@@ -198,6 +202,9 @@ export default function Home() {
           </div>
           <input value={speakers} onChange={(e) => setSpeakers(e.target.value)} aria-label="Speaker names, comma separated" className="rounded border bg-transparent px-2 py-1 text-xs" />
         </fieldset>
+
+        <TypeInput speaker={speaker} onSend={(text) => onChunk({ text })} />
+        <ExportMenu board={board} lines={lines} />
 
         <details className="rounded-lg border px-3 py-2">
           <summary className="cursor-pointer text-xs text-zinc-500">Fallbacks</summary>
