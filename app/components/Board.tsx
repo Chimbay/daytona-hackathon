@@ -13,8 +13,8 @@ const kindStyle: Record<NodeKind, string> = {
   fact: "bg-amber-50 border-amber-400 dark:bg-amber-950 dark:border-amber-600",
 };
 
-export default function Board({ board }: { board: BoardData }) {
-  const { nodes, edges, width, height } = layoutBoard(board);
+export default function Board({ board, pending }: { board: BoardData; pending?: ReadonlySet<string> }) {
+  const { nodes, edges, width, height } = layoutBoard(board, pending);
   const frame = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
 
@@ -79,11 +79,25 @@ export default function Board({ board }: { board: BoardData }) {
               title={n.quote ? `“${n.quote}”` : undefined}
             >
               <p className="text-[15px] font-medium leading-5">{n.label}</p>
+              {n.was.map((w) => (
+                <p key={w} className="mt-1 truncate text-xs text-zinc-400 line-through decoration-zinc-400/70">
+                  was: {w}
+                </p>
+              ))}
               {n.speaker && <p className="mt-1 text-xs text-zinc-500">{n.speaker}</p>}
               {n.source && (
                 <a href={n.source} target="_blank" rel="noreferrer" className="mt-1 block truncate text-xs text-amber-700 underline dark:text-amber-400">
-                  {new URL(n.source).hostname}
+                  internal wiki · {new URL(n.source).pathname}
                 </a>
+              )}
+              {n.pending && (
+                <motion.p
+                  className="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300"
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                >
+                  Researching in secure sandbox…
+                </motion.p>
               )}
             </motion.div>
           ))}
