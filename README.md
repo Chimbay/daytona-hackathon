@@ -67,10 +67,11 @@ Tests and evals:
 
 ```bash
 npm test        # pure board, brain-validation, memory, research and STT logic + research agent self-test
-npm run eval    # replays lib/demo-script.ts through the real Bedrock call and scores it
+npm run eval            # demoScript (few-shot, optimistic)
+npm run eval -- clip    # clipScript (held-out, the demo clip)
 ```
 
-The eval only replays `demoScript`, which is also the prompt's few-shot set, so its score is optimistic. `clipScript` in the same file is a held-out brainstorm, but the eval script doesn't run it yet.
+`demoScript` is also the prompt's few-shot set, so its score is optimistic. `clipScript` is held out; latest run: 6 of 7 steps pass, 0 of 5 ideas missed, 1 invented (an extra "Can we afford all this?" question), supersede and research flags 100%.
 
 ### Demo without a microphone
 

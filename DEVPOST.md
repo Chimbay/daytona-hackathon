@@ -119,7 +119,7 @@ mic ──WS──> ElevenLabs Scribe realtime ──chunk──> /api/board ─
 - The full loop runs live in production: speech in, board redraws, and an internal question gets answered from a sandbox and pinned with its source.
 - Credentials never enter the sandbox in usable form, AWS keys never enter it at all, and only page text leaves it.
 - Ideas change, not just accumulate. The board shows what each card replaced, and one click shows the full timestamped chain from memory, including which agent wrote each version.
-- We measure faithfulness. The eval runs the real model and scores missed ideas, invented ideas, supersedes and research flags. Any score on `demoScript` is inflated, because `demoScript` is also the prompt's few-shot set. That's why there's now a held-out brainstorm (`clipScript`, the one in the demo clip), which the eval script doesn't run yet.
+- We measure faithfulness. The eval runs the real model and scores missed ideas, invented ideas, supersedes and research flags. Any score on `demoScript` is inflated, because `demoScript` is also the prompt's few-shot set. So we also score a held-out brainstorm (`clipScript`, the one in the demo clip): 6 of 7 steps pass, 0 of 5 ideas missed, 1 invented (an extra "Can we afford all this?" question), supersede and research flags 100%.
 - Small, tested core: pure board, brain-validation, memory-mapping and research-pick logic with `node --test` tests, plus a self-test for the research agent's fallback picker, all run in CI with lint and build.
 
 ## What we learned
@@ -134,7 +134,7 @@ mic ──WS──> ElevenLabs Scribe realtime ──chunk──> /api/board ─
 - Real authentication to internal sources through Anchor identities. The demo wiki is public and fictional, so no login was needed.
 - Per-sandbox egress allowlists on a Daytona tier that supports them.
 - Real speaker diarization once realtime STT supports it, so the speaker picker can go away.
-- Run the eval on the held-out `clipScript` and track the score in Arize over prompt changes.
+- Track the held-out `clipScript` score in Arize over prompt changes, and grow the held-out set.
 - A replay slider over the whole board, driven by Agent Memory, showing the board as it stood at any moment of the meeting.
 - More sources than one wiki.
 
@@ -148,5 +148,5 @@ mic ──WS──> ElevenLabs Scribe realtime ──chunk──> /api/board ─
 - Sandbox network egress is **not** restricted per sandbox (a tier limitation; see the `shortcut:` comment in `app/api/research/route.ts`). What we do claim: an ephemeral sandbox per job, the key as a secret placeholder substituted only for `api.anchorbrowser.io`, only page text leaving, and the sandbox deleted.
 - Speakers come from the presenter's picker, not from the STT. When the demo clip plays, every line is tagged with whichever speaker is selected.
 - The demo clip voices are macOS text-to-speech (`scripts/make-demo-clip.sh`), not real people.
-- The eval only runs `demoScript`, which is also the few-shot set, so its score (6/6 per the team) is inflated. We have not quoted a held-out score.
+- `demoScript` is also the few-shot set, so its 6/6 is inflated. The held-out `clipScript` score is the honest one: 6 of 7 steps pass, 0 of 5 ideas missed, 1 invented (an extra "Can we afford all this?" question), supersede and research flags 100% (`npm run eval -- clip`).
 - Anchor rate-limits back-to-back session creation, so research questions need spacing.
