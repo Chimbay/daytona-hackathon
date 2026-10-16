@@ -1,0 +1,202 @@
+.dream-page {
+  --ink: #2a2440;
+  --muted: #554c6e;
+  --line: rgba(84, 70, 130, 0.28);
+  --cloud: #fcfaff;
+  --cloud-q: #f3f7ff;
+  --cloud-f: #fff5ee;
+  --accent: #6a4fc2;
+  --accent-ink: #ffffff;
+  --peach-ink: #9a4a22;
+  --sky-ink: #2f5d9a;
+  --glow: rgba(120, 96, 190, 0.18);
+  --bg-a: #e7def6;
+  --bg-b: #f8dfd2;
+  --bg-c: #d8e6f6;
+  --puff-1: rgba(255, 255, 255, 0.7);
+  --puff-2: rgba(255, 226, 210, 0.75);
+  --puff-3: rgba(208, 222, 255, 0.7);
+  color: var(--ink);
+  background: linear-gradient(170deg, var(--bg-a) 0%, var(--bg-b) 48%, var(--bg-c) 100%);
+  font-family: var(--font-quiet), ui-sans-serif, sans-serif;
+  position: relative;
+  overflow-x: clip;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dream-page {
+    --ink: #eee8fa;
+    --muted: #bdb3d6;
+    --line: rgba(200, 186, 255, 0.28);
+    --cloud: #2b2643;
+    --cloud-q: #232c46;
+    --cloud-f: #3a2a33;
+    --accent: #c9b8ff;
+    --accent-ink: #1d1830;
+    --peach-ink: #ffc2a0;
+    --sky-ink: #a9c8ff;
+    --glow: rgba(0, 0, 0, 0.35);
+    --bg-a: #1c1830;
+    --bg-b: #33243a;
+    --bg-c: #16233a;
+    --puff-1: rgba(150, 128, 220, 0.18);
+    --puff-2: rgba(240, 160, 130, 0.12);
+    --puff-3: rgba(110, 150, 230, 0.16);
+  }
+}
+
+/* Slow drifting light, radial gradients only (no filter blur) so moving them stays on the compositor. */
+.dream-puff {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  animation: dream-drift 38s ease-in-out infinite alternate;
+}
+.dream-puff:nth-of-type(1) { width: 60vmax; height: 40vmax; top: -12vmax; left: -18vmax; background: radial-gradient(closest-side, var(--puff-1), transparent); }
+.dream-puff:nth-of-type(2) { width: 52vmax; height: 34vmax; top: 30vh; right: -20vmax; background: radial-gradient(closest-side, var(--puff-2), transparent); animation-duration: 46s; animation-delay: -12s; }
+.dream-puff:nth-of-type(3) { width: 56vmax; height: 36vmax; top: 140vh; left: -10vmax; background: radial-gradient(closest-side, var(--puff-3), transparent); animation-duration: 52s; animation-delay: -20s; }
+
+@keyframes dream-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(6vmax, 3vmax, 0) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dream-puff { animation: none; }
+}
+
+.dream-display {
+  font-family: var(--font-round), ui-rounded, sans-serif;
+  letter-spacing: -0.01em;
+}
+.dream-muted { color: var(--muted); }
+
+.dream-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.85rem 1.6rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 10px 30px -10px var(--glow);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+.dream-cta:hover { transform: translateY(-2px); }
+.dream-ghostLink {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.8rem 1.5rem;
+  font-weight: 600;
+  border: 1.5px solid var(--line);
+  background: color-mix(in srgb, var(--cloud) 55%, transparent);
+  transition: transform 0.4s ease;
+}
+.dream-ghostLink:hover { transform: translateY(-2px); }
+.dream-ghost {
+  border-radius: 999px;
+  padding: 0.25rem 0.9rem;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 500;
+}
+.dream-cta:focus-visible, .dream-ghostLink:focus-visible, .dream-ghost:focus-visible, .dream-link:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.dream-link { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
+.dream-link:hover { text-decoration-color: currentColor; }
+
+/* Cloud node: a soft card with two puffs on top; drop-shadow wraps the whole silhouette. */
+.dream-cloud {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0.75rem 0.95rem 0.8rem;
+  border-radius: 26px;
+  background: var(--cloud);
+  color: var(--ink);
+  font-size: 14.5px;
+  line-height: 19px;
+  font-weight: 500;
+  filter: drop-shadow(0 8px 18px var(--glow));
+}
+.dream-cloud::before, .dream-cloud::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  background: inherit;
+}
+.dream-cloud::before { width: 54px; height: 54px; top: -16px; left: 22px; }
+.dream-cloud::after { width: 72px; height: 72px; top: -24px; left: 58px; }
+.dream-question { background: var(--cloud-q); }
+.dream-fact { background: var(--cloud-f); }
+.dream-kindTag {
+  display: block;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sky-ink);
+  margin-bottom: 2px;
+}
+.dream-fact .dream-kindTag { color: var(--peach-ink); }
+.dream-was {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 400;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.dream-edge {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1 7;
+}
+
+.dream-vapor {
+  z-index: 2;
+  text-shadow: 0 0 10px var(--bg-b), 0 0 2px var(--bg-b);
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  max-width: 300px;
+  font-family: var(--font-round), sans-serif;
+  font-size: 17px;
+  line-height: 23px;
+  font-style: italic;
+  color: var(--ink);
+  pointer-events: none;
+}
+.dream-speaker {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dream-panel {
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--cloud) 62%, transparent);
+  border: 1px solid var(--line);
+}
+.dream-beatNum {
+  font-family: var(--font-round), sans-serif;
+  color: var(--accent);
+}
+.dream-strike { text-decoration: line-through; text-decoration-color: var(--muted); }
