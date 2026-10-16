@@ -8,7 +8,7 @@ export type PlacedEdge = { key: string; d: string; label?: string; mx: number; m
 
 // shortcut: height guessed from label length, not measured; measure DOM if labels overflow.
 const nodeHeight = (n: BoardNode, extraLines: number) =>
-  56 + Math.ceil(n.label.length / 26) * 20 + (n.source ? 20 : 0) + extraLines * 18;
+  56 + Math.ceil(n.label.length / 26) * 20 + (n.source ? 20 : 0) + (n.quote && n.kind !== "fact" ? 36 : 0) + extraLines * 18; // quote: 2 clamped lines
 
 const MAX_WAS = 2; // older history stays in memory, not on the card
 
