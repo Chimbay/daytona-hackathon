@@ -5,10 +5,15 @@ import Board from "../components/Board";
 import DiscussionSidebar from "../components/DiscussionSidebar";
 import HistoryPanel from "../components/HistoryPanel";
 import MicMeter from "../components/MicMeter";
+import ReplayBar from "../components/ReplayBar";
+import TypeInput from "../components/TypeInput";
+import EmptyHint from "../components/EmptyHint";
+import ExportMenu from "../components/ExportMenu";
 import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { demoScript } from "@/lib/demo-script";
 import * as discussions from "@/lib/discussions";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
+import { useBoardHistory } from "@/lib/useBoardHistory";
 
 type Line = { speaker?: string; text: string };
 
@@ -41,10 +46,14 @@ export default function Home() {
   const [history, setHistory] = useState<{ id: string; session: string } | null>(null);
   const closeHistory = useCallback(() => setHistory(null), []);
 
+  const replay = useBoardHistory();
+  const { record } = replay;
   const apply = useCallback((edits: Edit[]) => {
-    boardRef.current = applyEdits(boardRef.current, edits);
+    const before = boardRef.current;
+    boardRef.current = applyEdits(before, edits);
     setBoard(boardRef.current);
-  }, []);
+    record(before, boardRef.current, edits);
+  }, [record]);
   // Switching to another version of an idea changes the real board, so the next chunk builds on it.
   const switchTo = useCallback((id: string) => {
     boardRef.current = activate(boardRef.current, id);
@@ -113,6 +122,7 @@ export default function Home() {
     setPending(new Set());
     setStep(0);
     setHistory(null);
+    replay.clear();
     session.current = "";
   };
 
@@ -187,16 +197,18 @@ export default function Home() {
         onRemove={removeDiscussion}
       />
       <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
-        <Board board={board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
+        <Board board={replay.shown ?? board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
+        <EmptyHint show={board.nodes.length === 0} />
         {/* Live captions so the room sees words land before the board redraws. */}
         {(partial || (live && lines.length > 0)) && (
           <p
             aria-hidden
-            className="pointer-events-none absolute inset-x-6 bottom-6 mx-auto max-w-3xl rounded-xl bg-white/85 px-5 py-3 text-center text-xl leading-snug shadow-sm backdrop-blur dark:bg-black/70"
+            className="pointer-events-none absolute inset-x-6 bottom-16 mx-auto max-w-3xl rounded-xl bg-white/85 px-5 py-3 text-center text-xl leading-snug shadow-sm backdrop-blur dark:bg-black/70"
           >
             {partial ? <span>{partial}</span> : <span className="text-zinc-500">{lines.at(-1)!.text}</span>}
           </p>
         )}
+        <ReplayBar {...replay} />
       </section>
 
       <aside className="flex w-full shrink-0 flex-col gap-3 text-sm md:w-80">
@@ -239,6 +251,9 @@ export default function Home() {
           </div>
           <input value={speakers} onChange={(e) => setSpeakers(e.target.value)} aria-label="Speaker names, comma separated" className="rounded border bg-transparent px-2 py-1 text-xs" />
         </fieldset>
+
+        <TypeInput speaker={speaker} onSend={(text) => onChunk({ text })} />
+        <ExportMenu board={board} lines={lines} />
 
         <details className="rounded-lg border px-3 py-2">
           <summary className="cursor-pointer text-xs text-zinc-500">Fallbacks</summary>

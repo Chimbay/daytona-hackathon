@@ -1,5 +1,5 @@
 import { Graph, layout as dagreLayout } from "@dagrejs/dagre";
-import { looseIds, stacks, unseen, type Board, type BoardNode } from "./board";
+import { looseIds, stackOf, stacks, unseen, type Board, type BoardNode } from "./board";
 
 export const NODE_W = 220;
 export const SNAP_H = 110;
@@ -24,8 +24,34 @@ export type Placed = BoardNode & {
   pending: boolean;
   unseen: number; // cards the hidden branch(es) grew while out of view
   loose: boolean; // didn't match any idea yet: floats around the tree until it's linked
+  branch?: number; // which top-level branch of the tree it sits on (unset: the topic, or loose)
 };
-export type PlacedEdge = { key: string; d: string; d0: string; label?: string; mx: number; my: number };
+export type PlacedEdge = { key: string; d: string; d0: string; label?: string; mx: number; my: number; branch?: number };
+
+// Top-level branches = children of a root card. Each card belongs to the branch its first parent
+// chain reaches. Numbered by when the branch's idea was first said, so colors don't reshuffle when a
+// branch head is superseded or the presenter switches versions (same stack, same number).
+function branchesOf(board: Board, inTree: ReadonlySet<string>): Map<string, number> {
+  const parent = new Map<string, string>();
+  for (const e of board.edges) if (inTree.has(e.from) && inTree.has(e.to) && !parent.has(e.to)) parent.set(e.to, e.from);
+  const headOf = (id: string) => {
+    const seen = new Set<string>();
+    for (let at = id; parent.has(at) && !seen.has(at); at = parent.get(at)!) {
+      seen.add(at);
+      if (!parent.has(parent.get(at)!)) return at;
+    }
+    return undefined; // a root, or a cycle
+  };
+  const byId = new Map(board.nodes.map((n) => [n.id, n]));
+  const born = (id: string) => byId.get(stackOf(byId.get(id)!))?.createdAt ?? byId.get(id)!.createdAt;
+  const heads = new Map<string, string>();
+  for (const id of inTree) {
+    const h = headOf(id);
+    if (h) heads.set(id, h);
+  }
+  const order = [...new Set(heads.values())].sort((a, b) => born(a) - born(b));
+  return new Map([...heads].map(([id, h]) => [id, order.indexOf(h)]));
+}
 
 // shortcut: height guessed from label length, not measured; measure DOM if labels overflow.
 const nodeHeight = (n: BoardNode, extraLines: number) =>
@@ -87,11 +113,13 @@ export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set
   }
   const parentOf = new Map(board.edges.filter((e) => anchors.has(e.from)).map((e) => [e.to, anchors.get(e.from)!]));
 
+  const branch = branchesOf(board, new Set(tree.map((c) => c.id)));
+
   const placed: Placed[] = cards.flatMap((c) => {
     const { x, y } = anchors.get(c.id)!;
     const o = parentOf.get(c.id) ?? { x, y };
     return [
-      { ...c.front, h: c.h, x, y, w: NODE_W, z: MAX_BEHIND + 1, ox: o.x, oy: o.y, front: true, deprecated: false, pending: c.pending, unseen: c.unseen, loose: c.loose },
+      { ...c.front, h: c.h, x, y, w: NODE_W, z: MAX_BEHIND + 1, ox: o.x, oy: o.y, front: true, deprecated: false, pending: c.pending, unseen: c.unseen, loose: c.loose, branch: branch.get(c.id) },
       ...c.behind.map((n, i) => ({
         ...n,
         h: c.h,
@@ -107,6 +135,7 @@ export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set
         pending: false,
         unseen: unseen(board, n),
         loose: false,
+        branch: branch.get(c.id),
       })),
     ];
   });
@@ -120,6 +149,7 @@ export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set
     const mx = (x1 + x2) / 2;
     return [{
       key: `${e.from}->${e.to}`,
+      branch: branch.get(e.to),
       label: e.label,
       mx,
       my: (y1 + y2) / 2,
