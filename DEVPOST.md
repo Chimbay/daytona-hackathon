@@ -2,7 +2,7 @@
 
 Paste-ready content for https://daytona-hacksprint-nyc.devpost.com/. One section per Devpost field.
 
-**Try it:** https://imagine-lac-xi.vercel.app
+**Try it:** https://imagine-lac-xi.vercel.app/board (landing page at https://imagine-lac-xi.vercel.app)
 
 ---
 

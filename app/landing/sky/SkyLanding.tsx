@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Cormorant_Garamond, Figtree } from "next/font/google";
 import * as motion from "motion/react-client";
+import { AskSafely, Memory, Problem } from "../sections";
 import { SkyShell } from "./Sky";
 import "./sky.css";
 
@@ -92,11 +93,11 @@ export default function SkyLanding() {
                 when the room changes its mind.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Link href="/" className={`sky-link sky-primary rounded-full px-7 py-3.5 text-base font-medium`}>
+                <Link href="/board" className={`sky-link sky-primary rounded-full px-7 py-3.5 text-base font-medium`}>
                   Open the board
                 </Link>
                 <Link
-                  href="/"
+                  href="/board"
                   aria-describedby="demo-note"
                   className={`sky-link sky-secondary rounded-full px-7 py-3.5 text-base font-medium`}
                 >
@@ -109,6 +110,8 @@ export default function SkyLanding() {
               </p>
             </motion.div>
           </section>
+
+          <Problem className="sky-idea" />
 
           {/* How it works */}
           <section aria-labelledby="how" className="mx-auto max-w-6xl px-6 py-24 sm:px-10">
@@ -193,6 +196,9 @@ export default function SkyLanding() {
               </motion.div>
             </motion.div>
           </section>
+
+          <AskSafely className="sky-idea" />
+          <Memory className="sky-idea" />
 
           {/* Built with */}
           <section aria-labelledby="built" className="mx-auto max-w-6xl px-6 py-20 sm:px-10">

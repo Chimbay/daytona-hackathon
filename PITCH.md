@@ -18,7 +18,7 @@ The clip voices are macOS text-to-speech, and realtime STT has no speaker labels
 
 ## Pre-flight (do this before going on stage or recording)
 
-- [ ] Open https://imagine-lac-xi.vercel.app (or `npm run dev`). Use full screen, and use dark mode if the projector washes out.
+- [ ] Open https://imagine-lac-xi.vercel.app/board (or `npm run dev` → `localhost:3000/board`). Use full screen, and use dark mode if the projector washes out.
 - [ ] Confirm the wiki is up: the `WIKI_URL` sandbox must be running. Relaunch it with `node --env-file=.env.local wiki/launch.mts` if needed, and update `WIKI_URL` on Vercel if the URL changed.
 - [ ] Warm up: run one research question, wait at least a minute, then press **Reset**. The first secret check and sandbox are the slowest, and **Anchor rate-limits back-to-back session creation**, so never ask two research questions close together.
 - [ ] Speaker names in the picker: `Maya, Dev, Sam`.
@@ -57,7 +57,7 @@ Record a live take: the cast talks into the mic and the screen shows the live ca
 | # | Time | Shot | Audio / voiceover |
 |---|---|---|---|
 | 1 | 0:00–0:08 | Title card: *Live Brainstorm Whiteboard*, plus the sponsor logos row | VO: "A whiteboard that keeps up with how a group's thinking changes." |
-| 2 | 0:08–0:15 | Empty board at imagine-lac-xi.vercel.app. Open **Fallbacks**, press **Play demo clip** | VO: "It listens through ElevenLabs Scribe realtime. Realtime STT has no speaker labels, so the presenter tags who's talking." |
+| 2 | 0:08–0:15 | Empty board at imagine-lac-xi.vercel.app/board. Open **Fallbacks**, press **Play demo clip** | VO: "It listens through ElevenLabs Scribe realtime. Realtime STT has no speaker labels, so the presenter tags who's talking." |
 | 3 | 0:15–0:35 | Clip lines 1–3: the goal card, then sales reps and referral branch off with a smooth realign | Clip audio |
 | 4 | 0:35–0:50 | Line 4: zoom on the sales-reps card becoming **Self-serve onboarding flow** with "was: Hire two more sales reps" | Clip audio, then VO: "It doesn't append. It supersedes." |
 | 5 | 0:50–1:15 | Line 6: the question card pulses **Researching in secure sandbox…**, then the fact pins with its source. Click the source link to show the fictional wiki page | VO: "Claude flags a question that needs internal data. A fresh Daytona sandbox drives an Anchor browser through our wiki, with the key held as a Daytona secret. Claude Haiku picks the answer outside the sandbox, and the sandbox is deleted." |
