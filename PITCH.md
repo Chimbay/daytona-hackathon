@@ -2,64 +2,76 @@
 
 Two parts: the **3-minute stage pitch** (top 8 only, followed by 2 minutes of Q&A) and the **demo video under 2 minutes** for Devpost (Round 1 is judged on the Devpost page alone, so the video carries the demo).
 
-Demo cast: three voices reading the scripted brainstorm from `lib/demo-script.ts` (Maya, Dev, Sam). The presenter drives the laptop.
+Both use the same brainstorm: the recorded demo clip `public/demo/brainstorm.wav` (53 seconds, three voices, transcript in `public/demo/brainstorm.txt`). On stage, three people can read it live instead.
+
+| # | Speaker | Line | What the board should do |
+|---|---|---|---|
+| 1 | Maya | "Okay team, the goal for today is simple. How do we double our sign-ups next quarter?" | Goal card: *Double sign-ups next quarter* |
+| 2 | Dev | "One idea. We hire two more sales reps to go after bigger accounts." | *Hire two more sales reps* branches off the goal |
+| 3 | Sam | "Another idea. A referral program, where every user gets a free month for each friend they invite." | Referral card branches off the goal |
+| 4 | Maya | "Actually, instead of hiring sales reps, let's build a self-serve onboarding flow. It scales much better than people." | **Supersede:** sales reps becomes *Self-serve onboarding flow*, with "was: Hire two more sales reps" |
+| 5 | Dev | "Nice. And the referral program should send new users straight into that onboarding flow." | Referral links to self-serve |
+| 6 | Sam | "But can we afford all of this? What was our Q3 revenue?" | Question card pulses **Researching in secure sandbox…**, then the fact pins with an *internal wiki · /finance/q3.html* link |
+| 7 | Maya | "Good question. Let's check the numbers, then ship self-serve onboarding first." | Self-serve card relabels |
+
+The clip voices are macOS text-to-speech, and realtime STT has no speaker labels. When the clip plays, every line is tagged with whichever speaker is selected in the picker, unless you tap along.
 
 ## Pre-flight (do this before going on stage or recording)
 
-- [ ] `npm run dev` is running, or the Vercel deploy is open. Close the browser zoom, use full screen, and turn on dark mode if the projector is washed out.
-- [ ] Fresh `WIKI_URL` (`node --env-file=.env.local wiki/launch.mts`). Open it once in a tab to confirm it loads.
-- [ ] Warm up: ask one research question ("How does our Q3 look?") and press **Reset**. The first Daytona secret check and the first sandbox are the slowest.
+- [ ] Open https://imagine-lac-xi.vercel.app (or `npm run dev`). Use full screen, and use dark mode if the projector washes out.
+- [ ] Confirm the wiki is up: the `WIKI_URL` sandbox must be running. Relaunch it with `node --env-file=.env.local wiki/launch.mts` if needed, and update `WIKI_URL` on Vercel if the URL changed.
+- [ ] Warm up: run one research question, wait at least a minute, then press **Reset**. The first secret check and sandbox are the slowest, and **Anchor rate-limits back-to-back session creation**, so never ask two research questions close together.
 - [ ] Speaker names in the picker: `Maya, Dev, Sam`.
-- [ ] Recorded clip of the scripted brainstorm on the desktop (WAV or MP3).
-- [ ] Mic permission already granted to the tab.
+- [ ] Mic permission already granted to the tab. Laptop volume up, so the clip is audible if you use it.
+- [ ] Arize project `brainstorm-board` open in another tab (for the video).
 
 ## 3-minute pitch
 
 | Time | Beat | Say | Do |
 |---|---|---|---|
 | 0:00–0:20 | **Hook** | "Every brainstorm ends with a whiteboard full of ideas we already killed, and a list of 'I'll check and get back to you.' We built a whiteboard that keeps up with the room." | Board on screen, empty. |
-| 0:20–0:40 | **Why it's new** | "Voice-to-mind-map exists, but it's one person dictating, and it only appends. A group changes its mind. Our board tracks that: new ideas *supersede* old ones." | — |
-| 0:40–1:50 | **Live demo** | Cast reads lines 1–4 of the script (goal, free tier, Slack, "make it a 30-day trial instead"). | Tap the speaker before each line. Point at the free-tier card turning into "30-day team trial" with **was: Free tier for small teams** struck through, and at the board realigning. |
-| | | Dev: "Can we afford that? How does our Q3 look?" | Question card appears with **Researching in secure sandbox…** |
-| | | While it runs: "That question needs internal numbers. Claude flagged it, and right now a fresh Daytona sandbox is driving an Anchor browser into our internal wiki. The Anchor key is a Daytona secret: the sandbox only ever sees a placeholder. Only the fact and its URL come back, then the sandbox is deleted." | Fact card pins: **Q3 revenue $4.2M, 18% over plan** · internal wiki · /finance/q3.html. Click the link. |
-| | | Sam: "Then the trial ships with the Slack app as the onboarding path." | The Slack card relabels and links to the trial. |
-| 1:50–2:30 | **How it's built** | "ElevenLabs Scribe realtime is the ears. Claude on Bedrock turns each phrase into graph edits, not pixels. SurrealDB Agent Memory stores every idea with its timestamp, quote and speaker, and supersedes are real relations, so we can replay how an idea evolved. Both agents share that memory. Arize traces each Claude call, and evals score the board against a scripted brainstorm for missed ideas, invented ideas and wrong supersedes." | Optional: show the architecture diagram from DEVPOST.md, or the `/api/history` JSON for the trial chain. |
-| 2:30–3:00 | **Impact and close** | "You walk out with the decision, not the whole debate, and with answers instead of follow-ups. Every card traces back to who said it or where it came from. Confidential data stays in a box that throws itself away." | Hold on the final board. |
+| 0:20–0:35 | **Why it's new** | "Voice-to-mind-map exists, but it's one person dictating, and it only appends. A group changes its mind. Our board tracks that: new ideas *supersede* old ones." | — |
+| 0:35–1:45 | **Live demo** | Cast reads lines 1–5, or press **Fallbacks → Play demo clip**. | If live, tap the speaker before each line. At line 4, point at *Hire two more sales reps* turning into *Self-serve onboarding flow* with the "was:" trail, and at the board realigning. |
+| | | Line 6: "What was our Q3 revenue?" While it runs: "That needs internal numbers. Claude flagged it, and a fresh Daytona sandbox is driving an Anchor browser through our internal wiki. The Anchor key is a Daytona secret, so the sandbox only ever sees a placeholder. The page text comes out, Claude Haiku picks the answer outside the sandbox, and the sandbox is deleted." | Fact card pins with its source. Click the link to show the wiki page. |
+| | | Line 7. | — |
+| 1:45–2:15 | **Memory** | "Every card lives in SurrealDB Agent Memory with its quote, speaker and time, and it's shared by both agents." | **Click the self-serve card.** The history panel ("From SurrealDB Agent Memory") shows v1 *Hire two more sales reps* (superseded, said by Dev) and v2 *Self-serve onboarding* (said by Maya), each with its quote and "added by board-agent". Then click the fact card to show "added by research-agent" and the source URL. |
+| 2:15–2:35 | **How it's built** | "ElevenLabs Scribe realtime is the ears. Claude on Bedrock turns each phrase into graph edits, not pixels. Arize traces every model call, and we have an eval that scores the board for missed ideas, invented ideas, supersedes and research flags. All of it runs on Vercel." | Optional: the architecture diagram from DEVPOST.md. |
+| 2:35–3:00 | **Impact and close** | "You walk out with the decision, not the whole debate, and with answers instead of follow-ups. Every card traces back to who said it or where it came from. Confidential data stays in a box that throws itself away." | Hold on the final board. |
 
 ### Q&A prep (answer honestly)
 
-- **"Is the sandbox network locked down?"** We wrote a per-sandbox allowlist (Anchor API and CDP hosts only), but our Daytona tier rejects per-sandbox allowlists, so the code falls back to a normal sandbox. The protections that do apply: a fresh ephemeral sandbox per question, the key is a secret placeholder that Daytona substitutes only on requests to `api.anchorbrowser.io`, only one JSON line leaves, and the sandbox is deleted.
+- **"Is the sandbox network locked down?"** We wrote a per-sandbox allowlist (Anchor API and CDP hosts only), but our Daytona tier rejects per-sandbox allowlists, so the code falls back to a normal sandbox. The protections that do apply: a fresh ephemeral sandbox per question, the key is a secret placeholder that Daytona substitutes only on requests to `api.anchorbrowser.io`, no AWS keys in the sandbox, only page text leaves, and the sandbox is deleted.
 - **"How do you know who's speaking?"** Realtime Scribe has no diarization, so the presenter taps the speaker. With diarizing realtime STT, the picker goes away.
-- **"Is that real company data?"** No. The wiki is a fictional "Acme" seeded wiki, hosted on a public Daytona preview URL with no login. Real sources would log in through Anchor identities (next step).
-- **"How does the agent find the right page?"** Keyword overlap between the question and the wiki's link keywords. It's simple and deterministic, and an LLM picker is next.
-- **"What if Claude gets it wrong?"** Edits are schema-constrained and validated server-side, edits that reference unknown ids are skipped, and the Arize evals score faithfulness against the scripted transcript.
+- **"Is that real company data?"** No. The wiki is a fictional "Acme" seeded wiki on a public Daytona preview URL with no login. Real sources would log in through Anchor identities (next step).
+- **"Can the model make up a source?"** No. Haiku returns a page index, and the source URL is the `href` of a page the browser actually read. If the Haiku call fails, a keyword match is the fallback.
+- **"How good is it?"** The eval replays a scripted brainstorm through the real model and scores missed ideas, invented ideas, supersedes and research flags. Be upfront: the scored script is also the few-shot set, so that score is optimistic. The demo clip's brainstorm is a held-out script, but we haven't scored it yet.
+- **"What if Claude gets it wrong?"** Edits are schema-constrained and validated server-side, edits that reference unknown ids are skipped, and every call is traced in Arize.
 - **"Latency?"** The board call uses Sonnet with thinking off and low effort, memory writes happen after the response, and research runs in parallel, so the board keeps updating while the sandbox works.
 
 ## Demo video shot list (under 2:00)
 
-Record a screen capture with voiceover. The cast's voices are captured live by the mic, or by the clip if the room is loud.
+Record the screen with the demo clip as the audio source (**Fallbacks → Play demo clip**), then add a voiceover in the gaps. Since speakers come from the picker, tap Maya, Dev or Sam in time with the clip, or say in the VO that the presenter tags speakers.
 
 | # | Time | Shot | Audio / voiceover |
 |---|---|---|---|
-| 1 | 0:00–0:10 | Title card: *Live Brainstorm Whiteboard*, plus the sponsor logos row | VO: "A whiteboard that keeps up with how a group's thinking changes." |
-| 2 | 0:10–0:20 | Empty board. Click **Start mic**, then tap **Maya** in the speaker picker | VO: "It listens through ElevenLabs Scribe realtime. Realtime STT has no speaker labels, so the presenter taps who's talking." |
-| 3 | 0:20–0:40 | Lines 1–3: the goal card, then the free tier and Slack cards branch off with a smooth realign | Cast reads lines 1–3 |
-| 4 | 0:40–0:55 | Line 4: zoom on the free-tier card becoming **30-day team trial** with "was: Free tier for small teams" | Cast reads line 4. VO: "It doesn't append. It supersedes, and it keeps the history." |
-| 5 | 0:55–1:20 | Line 5: the question card shows **Researching in secure sandbox…**. Picture-in-picture or a cut to the Daytona dashboard showing the sandbox, if available | VO: "Claude flags a question that needs internal data. A fresh Daytona sandbox drives an Anchor browser into our wiki. The key is a Daytona secret, so the sandbox only sees a placeholder." |
-| 6 | 1:20–1:30 | Fact card pins with the source link. Click it to show the fictional wiki page | VO: "The answer comes back with its source. Then the sandbox is deleted." |
-| 7 | 1:30–1:40 | Line 7: the Slack card relabels and links to the trial | Cast reads line 7 |
-| 8 | 1:40–1:52 | `/api/history?session=…` JSON (supersede chain with timestamps), then the Arize trace view <!-- verify after Arize PR merges --> | VO: "Every idea lives in SurrealDB Agent Memory with its quote, speaker and timestamp, shared by both agents. Arize traces every Claude call." |
-| 9 | 1:52–2:00 | Final board plus the repo URL | VO: "Built on Vercel, Bedrock, ElevenLabs, Daytona, Anchor, SurrealDB and Arize." |
+| 1 | 0:00–0:08 | Title card: *Live Brainstorm Whiteboard*, plus the sponsor logos row | VO: "A whiteboard that keeps up with how a group's thinking changes." |
+| 2 | 0:08–0:15 | Empty board at imagine-lac-xi.vercel.app. Open **Fallbacks**, press **Play demo clip** | VO: "It listens through ElevenLabs Scribe realtime. Realtime STT has no speaker labels, so the presenter tags who's talking." |
+| 3 | 0:15–0:35 | Clip lines 1–3: the goal card, then sales reps and referral branch off with a smooth realign | Clip audio |
+| 4 | 0:35–0:50 | Line 4: zoom on the sales-reps card becoming **Self-serve onboarding flow** with "was: Hire two more sales reps" | Clip audio, then VO: "It doesn't append. It supersedes." |
+| 5 | 0:50–1:15 | Line 6: the question card pulses **Researching in secure sandbox…**, then the fact pins with its source. Click the source link to show the fictional wiki page | VO: "Claude flags a question that needs internal data. A fresh Daytona sandbox drives an Anchor browser through our wiki, with the key held as a Daytona secret. Claude Haiku picks the answer outside the sandbox, and the sandbox is deleted." |
+| 6 | 1:15–1:35 | **Click the self-serve card.** The history panel slides in: "From SurrealDB Agent Memory", v1 superseded, v2 live, with quotes, speakers, times and "added by board-agent". Click the fact card to show "added by research-agent" | VO: "Every version lives in SurrealDB Agent Memory with its quote, speaker and time, shared by the board agent and the research agent." |
+| 7 | 1:35–1:50 | Arize AX project `brainstorm-board`: a `board-edits` trace with the Bedrock LLM span, then the eval experiment | VO: "Arize traces every model call, and our eval scores the board for missed ideas, invented ideas and supersedes." |
+| 8 | 1:50–2:00 | Final board plus the repo URL | VO: "Built on Vercel, Bedrock, ElevenLabs, Daytona, Anchor, SurrealDB and Arize." |
 
-To get the session id for shot 8, use the `sessionId` from the network tab (the request body of any `/api/board` call).
+The history panel reads memory, which lands about a second after each update. If it says "Not in memory yet", press **Refresh**.
 
 ## Fallbacks (noisy room or a failing service)
 
 The sidebar has a **Fallbacks** panel. Decide within 5 seconds, and don't debug on stage.
 
-1. **Mic picks up the room badly.** Press **Reset**, open **Fallbacks → Play recorded clip**, and choose the recorded brainstorm. It plays aloud and streams through the same ElevenLabs → Claude path, so the demo is still live. Tap the speaker names in time with the clip if you can. Otherwise chunks are tagged with the selected speaker.
-2. **ElevenLabs, Bedrock or the network is down.** Press **Reset**, then **Fallbacks → Scripted line** to click through all 7 steps. The scripted script applies its expected edits locally with no network, including the pinned Q3 fact, so the supersede and fact beats still land. Say: "This is the scripted eval run, the same brainstorm we score with Arize."
-3. **Research hangs past about 20 seconds.** Keep talking through the architecture beat. The route times out the sandbox command at 45 s and the card stops showing "Researching…". If no fact arrived, say so, press **Reset**, and click through **Scripted line** to show the pinned fact. The scripted counter always starts at step 1.
+1. **Mic picks up the room badly.** Open **Fallbacks → Play demo clip**, which resets the board first. The clip plays aloud and streams through the same ElevenLabs → Claude path, so the demo is still live. Tap speaker names in time with it if you can.
+2. **ElevenLabs, Bedrock or the network is down.** Press **Reset**, then **Fallbacks → Scripted line** to click through all 7 steps. This replays `demoScript` (a free tier superseded by a 30-day trial, then "How does our Q3 look?"), not the clip's brainstorm, and applies the expected edits locally with no network, including the pinned Q3 fact. Say: "This is the scripted run we score our evals against." The history panel needs the network, so skip the memory beat.
+3. **Research hangs or fails** (Anchor rate limit, wiki down). Keep talking through the architecture beat. The route times out the sandbox command at 45 s, and the card stops pulsing. If no fact arrived, say so, and show the fact on the Scripted-line run, or in an earlier take for the video.
 4. **Projector is too small to read the cards.** Zoom the browser. The board scales to fit.
 
-For the video: if a live take fails, record with the clip fallback. Never fake the fact card in editing.
+For the video: if a live take fails, record another take with the clip. Never fake the fact card in editing.
