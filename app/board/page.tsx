@@ -9,6 +9,7 @@ import ReplayBar from "../components/ReplayBar";
 import TypeInput from "../components/TypeInput";
 import EmptyHint from "../components/EmptyHint";
 import ExportMenu from "../components/ExportMenu";
+import { sans } from "../fonts";
 import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { branchScript, clipScript, demoScript, type Step } from "@/lib/demo-script";
 import * as discussions from "@/lib/discussions";
@@ -207,7 +208,7 @@ export default function Home() {
   const live = status === "live" || status === "connecting";
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
+    <main className={`board-sky ${sans.variable} flex flex-1 flex-col gap-6 p-6 md:flex-row`}>
       <DiscussionSidebar
         items={saved}
         currentId={current}
@@ -216,7 +217,7 @@ export default function Home() {
         onRename={(id, title) => setSaved(discussions.rename(id, title))}
         onRemove={removeDiscussion}
       />
-      <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
+      <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-3xl bg-white/60 p-6 shadow-[0_1px_2px_rgba(60,70,120,0.05),0_18px_48px_-18px_rgba(90,100,160,0.28)] ring-1 ring-white/90 backdrop-blur-md dark:bg-[rgba(30,36,78,0.45)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2),0_18px_48px_-18px_rgba(0,0,0,0.6)] dark:ring-white/10">
         <Board board={replay.shown ?? board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
         <EmptyHint show={board.nodes.length === 0} />
         {/* Live captions so the room sees words land before the board redraws. */}

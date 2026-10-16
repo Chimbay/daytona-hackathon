@@ -45,3 +45,52 @@ body {
     --branch-5: #c4a6ec;
   }
 }
+
+/* Board page: a quieter cousin of the landing sky. Tailwind's zinc greys are re-tinted toward the
+   landing's ink (#1f2747 family), primary buttons take its accent, and a washed-out sky sits behind. */
+.board-sky {
+  --ink: #1f2747;
+  --color-zinc-50: #f5f6fb;
+  --color-zinc-100: #eceef7;
+  --color-zinc-200: #dde0ef;
+  --color-zinc-300: #c6cbe2;
+  --color-zinc-400: #9298bb;
+  --color-zinc-500: #5d6585;
+  --color-zinc-600: #454d6e;
+  --color-zinc-700: #353c5c;
+  --color-zinc-800: #262c4a;
+  --color-zinc-900: #1a1f3d;
+  --color-zinc-950: #10142e;
+  --foreground: #2f4fa8;
+  --background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-sky-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.board-sky::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, #e6edf8 0%, #f0eef7 45%, #fbf2ee 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .board-sky {
+    --ink: #eef0fb;
+    --foreground: #c9d4ff;
+    --background: #141a3d;
+  }
+  .board-sky::before {
+    background: linear-gradient(180deg, #0b1230 0%, #131a3c 50%, #1f1d44 100%);
+  }
+}
+
+/* Unstyled `border` utilities default to currentColor; soften them to the ink at low strength.
+   In the base layer so explicit border-* utilities still win. */
+@layer base {
+  .board-sky :where(*, ::before, ::after) {
+    border-color: color-mix(in srgb, var(--ink) 16%, transparent);
+  }
+}
