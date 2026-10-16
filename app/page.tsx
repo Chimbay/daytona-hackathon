@@ -96,7 +96,7 @@ export default function Home() {
   };
 
   // Fallback: play the recorded brainstorm aloud and transcribe it through the same path as the mic.
-  const playClip = (file: File) => {
+  const playClip = (file: Blob) => {
     reset();
     audio.current = new Audio(URL.createObjectURL(file));
     void audio.current.play();
@@ -151,6 +151,12 @@ export default function Home() {
         <details className="rounded-lg border px-3 py-2">
           <summary className="cursor-pointer text-xs text-zinc-500">Fallbacks</summary>
           <div className="mt-2 flex flex-col gap-2">
+            <button
+              onClick={async () => playClip(await (await fetch("/demo/brainstorm.wav")).blob())}
+              className="rounded-lg border px-3 py-2"
+            >
+              Play demo clip
+            </button>
             <label className="text-xs">
               Play recorded clip (WAV/MP3)
               <input type="file" accept="audio/*" onChange={(e) => e.target.files?.[0] && playClip(e.target.files[0])} className="mt-1 block w-full text-xs" />
