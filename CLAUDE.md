@@ -6,7 +6,7 @@ Pitch angle (prior art covers single-speaker "voice → mind map"): the board tr
 
 ## Hard rules
 
-- All API keys live in `.env` (gitignored). Never commit, print or log them. The repo goes public at submission.
+- All API keys live in `.env.local` (gitignored). Load into a shell with `set -a; source .env.local; set +a`. Never commit, print or log them. The repo goes public at submission.
 - Confidential research only touches the team's own accounts. For the demo, use a seeded fake internal wiki — never real company data on stage.
 - **Deadline 3:30 PM, Devpost.** A working loop beats features: speech in → board updates live. Cut scope before cutting the demo.
 - The demo must work live in a noisy room. Keep a pre-recorded brainstorm audio clip as a fallback input.
@@ -25,8 +25,10 @@ Pitch angle (prior art covers single-speaker "voice → mind map"): the board tr
 
 ## Status (update as you go)
 
-- No code yet. Renderer (Mermaid vs React Flow) not chosen.
-- Unverified: Bedrock model/region access on the lab account; Anchor's API hostnames (for the Daytona domain allowlist); Anchor reaching a Daytona preview URL; speaker labels in Scribe realtime mode.
+- No code yet. Renderer: Next.js + dagre + Motion.
+- Verified working: Bedrock (`us.anthropic.claude-haiku-5-5`, `us.anthropic.claude-sonnet-5-5`, us-west-2), Daytona create/exec/delete, Anchor MCP, ElevenLabs realtime token (`POST /v1/single-use-token/realtime_scribe`; key is restricted, `/v1/user` returns 401 — that's fine).
+- Keys in `.env.local`: `AWS_*`, `DAYTONA_API_KEY`, `DAYTONA_API_URL`, `ANCHOR_API_KEY`, `ELEVENLABS_API_KEY`, `SURREAL`, `arize_api` (last two unverified, may need renaming to what their SDKs expect).
+- Unverified: Bedrock model/region access on the lab account; Anchor hostnames beyond `api.anchorbrowser.io` (the browser CDP connection may use another host — check before tightening the Daytona allowlist); Anchor reaching a Daytona preview URL; speaker labels in Scribe realtime mode.
 
 ## Architecture (one sponsor per layer)
 
@@ -43,7 +45,7 @@ Pitch angle (prior art covers single-speaker "voice → mind map"): the board tr
 Flow: mic → ElevenLabs (browser WebSocket) → transcript chunk → Vercel route → Bedrock → board edits → SurrealDB → board redraws.
 Research branch: Bedrock flags a question → Vercel route creates Daytona sandbox → agent drives Anchor to the internal source → fact + source URL → SurrealDB → pinned on the board → sandbox deleted.
 
-**Board model:** the source of truth is a small graph (nodes = ideas/facts, edges = relations), not pixels. Claude returns edits as JSON; the frontend renders with auto-layout (Mermaid or React Flow + dagre — pick one, don't build a canvas). One presenter screen drives the demo, so no realtime multi-viewer sync: the board updates from each route's response. Vercel functions can't hold WebSockets — don't design around them.
+**Board model:** the source of truth is a small graph (nodes = ideas/facts, edges = relations), not pixels. Claude returns edits as JSON; the frontend renders with **Next.js + dagre + Motion**: dagre computes node positions from the graph, nodes are absolutely positioned `motion.div`s that animate to their new `x/y` (and fade in/out via `AnimatePresence`), edges are SVG `motion.path`s whose `d` animates. No React Flow — the board is display-only, so its pan/drag/handles aren't needed, and Motion gives the smooth "realign" animation that sells the demo. Don't build a freehand canvas. One presenter screen drives the demo, so no realtime multi-viewer sync: the board updates from each route's response. Vercel functions can't hold WebSockets — don't design around them.
 
 **Eval set:** a scripted brainstorm transcript (plus its audio) with the expected final board. Use it for the fallback demo and for Arize evals (missed ideas, invented ideas, wrong merges).
 
@@ -53,7 +55,7 @@ SurrealDB prize criteria to hit visibly: time-aware facts that supersede, each i
 
 Use these instead of guessing sponsor APIs:
 - Daytona: `daytona`
-- Anchor: `anchorbrowser-cli` (identities + authenticated sessions)
+- Anchor: `anchorbrowser-cli` (identities + authenticated sessions); hosted MCP in `.mcp.json` (`https://api.anchorbrowser.io/v1/mcp`, needs `ANCHOR_API_KEY` exported in the shell that launches Claude Code)
 - ElevenLabs: `speech-to-text` (realtime events in `references/realtime-events.md`), `setup-api-key`
 - SurrealDB: `surrealdb-agent-memory-docs` (Agent Memory; formerly "Spectron", env vars still `SPECTRON_*`), `surrealdb-js`, `surrealdb-python`, `surrealql`, `surrealdb-docs`
 - Arize: `arize-instrumentation` (add tracing), `arize-experiment` (evals), `arize-trace` (inspect traces)
