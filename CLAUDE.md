@@ -15,12 +15,8 @@ Pitch angle (prior art covers single-speaker "voice → mind map"): the board tr
 
 Checked against `main` (status as of 2026-10-16):
 
-- [ ] **1:00 PM** — mic → transcript → Claude → board redraws, end to end
-  - Built on main: `/api/stt-token`, `useTranscript`, `/api/board` + `lib/brain.ts`, board renderer. Not wired: `app/page.tsx` still replays `demoScript`, and the live mic path runs only on `/dev/stt`.
-- [ ] **2:30 PM** — Anchor research from Daytona, memory (idea history), Arize tracing + evals
-  - [ ] Anchor research from Daytona — `/api/research` is in open PR #6, not on main
-  - [ ] Memory (SurrealDB) — no code on main yet; `SPECTRON_*` keys are in `.env.local` and on Vercel
-  - [ ] Arize tracing + evals — not started
+- [x] **1:00 PM** — mic → transcript → Claude → board redraws, end to end. Live at `/board` (landing page at `/`), with mic level meter, live captions, pause/noisy-room tuning, speaker picker, clip + scripted fallbacks.
+- [x] **2:30 PM** — Anchor research from Daytona (LLM page pick), SurrealDB memory + history panel, Arize tracing + evals (held-out clip script 6/7). All on main and verified on production.
 - [ ] **3:15 PM** — demo video (<2 min) recorded, Devpost page done, repo public
   - [ ] Demo video — not recorded
   - [ ] Devpost page — not checkable from the repo

@@ -1,7 +1,9 @@
 // Research agent: runs INSIDE an ephemeral Daytona sandbox (Node >= 22, zero deps).
 //
-// Opens an Anchor cloud browser, drives it over CDP to the internal wiki page that answers the
-// question, and prints only {"fact","source"} JSON. $ANCHOR_API_KEY here is a Daytona secret
+// Opens an Anchor cloud browser, drives it over CDP to the internal wiki, reads the index and the
+// text of every linked page, and prints {"pages":[{href,title,text}],"fallback":{fact,source}|null}.
+// The route outside the sandbox has an LLM pick the page and extract the answer; "fallback" is the
+// keyword match, used if that LLM call fails. $ANCHOR_API_KEY here is a Daytona secret
 // placeholder: the real key is swapped in at the sandbox's egress, so this process never sees it.
 // The CDP URL Anchor returns is session-scoped and does not contain the API key.
 //
@@ -54,14 +56,26 @@ async function openPage(cdp) {
   await s("Network.enable");
   // Daytona shows a browser interstitial on preview URLs; this header skips it.
   await s("Network.setExtraHTTPHeaders", { headers: { "X-Daytona-Skip-Preview-Warning": "true" } });
+  await s("Emulation.setDeviceMetricsOverride", { width: 800, height: 600, deviceScaleFactor: 1, mobile: false });
   return {
+    // JPEG data URL of the answer block ([data-fact]) with some context around it, else the page top.
+    async snapshot() {
+      const r = await this.eval(`(() => { const e = document.querySelector("[data-fact]"); if (!e) return null;
+        e.scrollIntoView({ block: "center" }); const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; })()`);
+      const pad = 48;
+      const clip = r
+        ? { x: Math.max(0, r.x - pad), y: Math.max(0, r.y - pad), width: Math.min(800, r.w + 2 * pad), height: r.h + 2 * pad, scale: 1 }
+        : { x: 0, y: 0, width: 800, height: 400, scale: 1 };
+      const { data } = await s("Page.captureScreenshot", { format: "jpeg", quality: 70, clip });
+      return `data:image/jpeg;base64,${data}`;
+    },
     async goto(url) {
       const loaded = cdp.once("Page.loadEventFired");
       await s("Page.navigate", { url });
       await loaded;
     },
     async eval(expression) {
-      const r = await s("Runtime.evaluate", { expression, returnByValue: true });
+      const r = await s("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
       if (r.exceptionDetails) throw new Error(`page eval failed: ${r.exceptionDetails.text}`);
       return r.result.value;
     },
@@ -85,13 +99,26 @@ async function research(question, wiki) {
   try {
     const page = await openPage(cdp);
     await page.goto(wiki.replace(/\/?$/, "/"));
-    const links = await page.eval(
-      `[...document.querySelectorAll('a[data-keywords]')].map(a => ({ href: a.href, kw: a.dataset.keywords }))`,
-    );
-    const href = bestLink(question, links);
-    if (!href) return { error: "no wiki page matches the question" };
-    await page.goto(href);
-    return await page.eval(`({ fact: document.querySelector('[data-fact]').textContent.trim(), source: location.href })`);
+    // The wiki is small: fetch every linked page in parallel from inside the browser (same origin,
+    // same extra headers) instead of navigating one by one.
+    const pages = await page.eval(`Promise.all([...document.querySelectorAll('a[data-keywords]')].map(async (a) => {
+      const doc = new DOMParser().parseFromString(await (await fetch(a.href)).text(), "text/html");
+      return { href: a.href, title: a.textContent.trim(), kw: a.dataset.keywords,
+        fact: doc.querySelector("[data-fact]")?.textContent.trim() ?? null,
+        text: doc.body.textContent.replace(/\\s+/g, " ").trim() };
+    }))`);
+    // A visible snippet of each page as Anchor rendered it; the route keeps only the one it cites.
+    const snapshots = {};
+    for (const p of pages) {
+      await page.goto(p.href);
+      snapshots[p.href] = await page.snapshot().catch(() => null);
+    }
+    const best = pages.find((p) => p.href === bestLink(question, pages));
+    return {
+      pages: pages.map(({ href, title, text }) => ({ href, title, text })),
+      snapshots,
+      fallback: best?.fact ? { fact: best.fact, source: best.href } : null,
+    };
   } finally {
     cdp.close();
     await anchor("DELETE", `/sessions/${data.id}`).catch(() => {});

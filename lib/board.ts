@@ -16,6 +16,7 @@ export type BoardNode = {
   speaker?: string; // provenance for ideas/questions
   quote?: string;
   source?: string; // provenance for researched facts (URL)
+  snapshot?: string; // image data URL of the source page, as the research browser saw it
   createdAt: number;
   supersededBy?: string; // first idea that replaced this one; kept for idea history
   stack?: string; // id of the first version of this idea; unset = this node starts its own stack
@@ -236,8 +237,8 @@ export function stacks(board: Board): BoardNode[][] {
 }
 
 // A researched answer pinned to the question node it answers; shared by the page and memory.
-export const factEdits = (nodeId: string, fact: string, source: string): Edit[] => [
-  { op: "add", node: { id: `fact-${nodeId}`, label: fact, kind: "fact", source } },
+export const factEdits = (nodeId: string, fact: string, source: string, snapshot?: string): Edit[] => [
+  { op: "add", node: { id: `fact-${nodeId}`, label: fact, kind: "fact", source, ...(snapshot && { snapshot }) } },
   { op: "link", from: nodeId, to: `fact-${nodeId}` },
 ];
 

@@ -2,6 +2,7 @@ import { Graph, layout as dagreLayout } from "@dagrejs/dagre";
 import { looseIds, stacks, unseen, type Board, type BoardNode } from "./board";
 
 export const NODE_W = 220;
+export const SNAP_H = 110;
 export const PEEK = 26; // how much of each card behind the front one shows above it
 const INSET = 8; // each card further back is this much narrower per side, like a deck
 const MAX_BEHIND = 3; // older history stays in memory, not on the board
@@ -28,7 +29,7 @@ export type PlacedEdge = { key: string; d: string; d0: string; label?: string; m
 
 // shortcut: height guessed from label length, not measured; measure DOM if labels overflow.
 const nodeHeight = (n: BoardNode, extraLines: number) =>
-  56 + Math.ceil(n.label.length / 26) * 20 + (n.source ? 20 : 0) + (n.quote && n.kind !== "fact" ? 36 : 0) + extraLines * 18; // quote: 2 clamped lines
+  56 + Math.ceil(n.label.length / 26) * 20 + (n.source ? 20 : 0) + (n.snapshot ? SNAP_H + 8 : 0) + (n.quote && n.kind !== "fact" ? 36 : 0) + extraLines * 18; // quote: 2 clamped lines
 
 export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set()) {
   const g = new Graph();

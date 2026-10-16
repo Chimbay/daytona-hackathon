@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { Board as BoardData, NodeKind } from "@/lib/board";
-import { layoutBoard, PEEK } from "@/lib/layout";
+import { layoutBoard, PEEK, SNAP_H } from "@/lib/layout";
 
 // Soft, barely-bouncy moves: switching branches can reshuffle the whole board, so nothing snaps.
 const move = { type: "spring", visualDuration: 0.75, bounce: 0.12 } as const;
@@ -160,6 +160,10 @@ export default function Board({ board, pending, onSelect, selected, onActivate }
               )}
 
               {n.speaker && <p className="mt-1 text-xs text-zinc-500">{n.speaker}</p>}
+              {n.snapshot && (
+                // eslint-disable-next-line @next/next/no-img-element -- data URL, nothing for next/image to optimize
+                <img src={n.snapshot} alt={`Snippet of ${n.source ?? "the source page"}`} style={{ height: SNAP_H }} className="mt-2 w-full rounded border border-amber-300 object-cover object-top dark:border-amber-700" />
+              )}
               {n.source && (
                 <a href={n.source} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} className="mt-1 block truncate text-xs text-amber-700 underline dark:text-amber-400">
                   internal wiki · {new URL(n.source).pathname}

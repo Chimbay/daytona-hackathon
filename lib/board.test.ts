@@ -186,3 +186,13 @@ test("replaced walks the supersede chain newest first", () => {
   assert.deepEqual(replaced(b, "c"), ["trial", "free tier"]);
   assert.deepEqual(replaced(b, "a"), []);
 });
+
+test("clipScript matches the recorded clip's text and builds the expected board", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { clipScript } = await import("./demo-script.ts");
+  const spoken = clipScript.filter((s) => s.speaker !== "Board").map((s) => `${s.speaker}: ${s.text}`);
+  assert.deepEqual(spoken, readFileSync("public/demo/brainstorm.txt", "utf8").trim().split("\n"));
+  const b = clipScript.reduce((b, s, i) => applyEdits(b, s.edits, i), emptyBoard);
+  assert.deepEqual(visibleNodes(b).map((n) => n.id).sort(), ["fact-q3", "goal", "q-q3", "referral", "self-serve"]);
+  assert.deepEqual(replaced(b, "self-serve"), ["Hire two more sales reps"]);
+});
