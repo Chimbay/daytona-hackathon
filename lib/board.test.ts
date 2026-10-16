@@ -196,3 +196,19 @@ test("clipScript matches the recorded clip's text and builds the expected board"
   assert.deepEqual(visibleNodes(b).map((n) => n.id).sort(), ["fact-q3", "goal", "q-q3", "referral", "self-serve"]);
   assert.deepEqual(replaced(b, "self-serve"), ["Hire two more sales reps"]);
 });
+
+test("branchScript shows stacking, a floating idea joining, a hidden +1, and switching back", async () => {
+  const { branchScript } = await import("./demo-script.ts");
+  const at = (n: number) =>
+    branchScript.slice(0, n).reduce((b, s, i) => (s.activate ? activate(b, s.activate, i + 1) : applyEdits(b, s.edits, i + 1)), emptyBoard);
+  const front = (b: Board, id: string) => stacks(b).find((s) => s.some((n) => n.id === id))!;
+
+  assert.deepEqual([...looseIds(at(3))], ["docs"]);
+  assert.deepEqual(front(at(4), "trial").map((n) => n.id), ["trial", "free-tier"]);
+  assert.deepEqual(ids(at(6)), ["docs", "free-tier", "goal"]); // switched: trial's Slack card hidden
+  const b8 = at(8);
+  assert.deepEqual(ids(b8), ["docs", "free-tier", "goal", "seats"]);
+  assert.equal(unseen(b8, front(b8, "trial")[1]), 1); // "two weeks" landed on the hidden trial
+  assert.deepEqual([...looseIds(at(9))], []);
+  assert.deepEqual(ids(at(10)), ["docs", "goal", "slack", "trial", "two-weeks"]);
+});

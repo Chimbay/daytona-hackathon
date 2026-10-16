@@ -10,12 +10,20 @@ import TypeInput from "../components/TypeInput";
 import EmptyHint from "../components/EmptyHint";
 import ExportMenu from "../components/ExportMenu";
 import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
-import { demoScript } from "@/lib/demo-script";
+import { branchScript, clipScript, demoScript, type Step } from "@/lib/demo-script";
 import * as discussions from "@/lib/discussions";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
 import { useBoardHistory } from "@/lib/useBoardHistory";
 
 type Line = { speaker?: string; text: string };
+
+// Offline scripted demos, stepped with arrows; no network at all.
+const scripts: { name: string; steps: Step[] }[] = [
+  { name: "Main brainstorm", steps: demoScript },
+  { name: "Recorded clip", steps: clipScript },
+  { name: "Branches", steps: branchScript },
+];
+const playStep = (b: BoardData, s: Step, now?: number) => (s.activate ? activate(b, s.activate, now) : applyEdits(b, s.edits, now));
 
 async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -33,7 +41,8 @@ export default function Home() {
   const [speakers, setSpeakers] = useState("Maya, Dev, Sam");
   const [speaker, setSpeaker] = useState("Maya");
   const speakerRef = useRef(speaker);
-  const [step, setStep] = useState(0);
+  // Which scripted demo is on the board and how many of its steps have played.
+  const [scripted, setScripted] = useState({ script: 0, step: 0 });
   // Live-mic tuning; applies the next time the mic starts.
   const [pause, setPause] = useState(1.2);
   const [noisy, setNoisy] = useState(false);
@@ -120,7 +129,7 @@ export default function Home() {
     setLines([]);
     setNotes([]);
     setPending(new Set());
-    setStep(0);
+    setScripted((s) => ({ ...s, step: 0 }));
     setHistory(null);
     replay.clear();
     session.current = "";
@@ -175,13 +184,24 @@ export default function Home() {
     }
   };
 
-  // Offline fallback: scripted lines with their expected edits, no network at all.
-  const nextScripted = () => {
-    const s = demoScript[step];
-    if (!s) return;
-    setLines((l) => [...l, { speaker: s.speaker, text: s.text }]);
-    apply(s.edits);
-    setStep(step + 1);
+  // Forward plays one step on top of the current board, so clicks made along the way stick.
+  // Back rebuilds the board from the script up to the previous step.
+  const stepScript = (script: number, dir: 1 | -1) => {
+    const { steps } = scripts[script];
+    const at = scripted.script === script ? scripted.step : 0;
+    const to = at + dir;
+    if (to < 0 || to > steps.length) return;
+    if (dir === 1 && scripted.script === script) {
+      const s = steps[at];
+      boardRef.current = playStep(boardRef.current, s);
+      setLines((l) => [...l, { speaker: s.speaker, text: s.text }]);
+    } else {
+      reset();
+      boardRef.current = steps.slice(0, to).reduce((b, s, i) => playStep(b, s, i + 1), emptyBoard);
+      setLines(steps.slice(0, to).map((s) => ({ speaker: s.speaker, text: s.text })));
+    }
+    setBoard(boardRef.current);
+    setScripted({ script, step: to });
   };
 
   const live = status === "live" || status === "connecting";
@@ -268,9 +288,17 @@ export default function Home() {
               Play recorded clip (WAV/MP3)
               <input type="file" accept="audio/*" onChange={(e) => e.target.files?.[0] && playClip(e.target.files[0])} className="mt-1 block w-full text-xs" />
             </label>
-            <button onClick={nextScripted} disabled={step >= demoScript.length} className="rounded-lg border px-3 py-2 disabled:opacity-40">
-              Scripted line ({step}/{demoScript.length})
-            </button>
+            {scripts.map(({ name, steps }, i) => {
+              const at = scripted.script === i ? scripted.step : 0;
+              return (
+                <div key={name} className="flex items-center gap-2">
+                  <span className="flex-1 text-xs">{name}</span>
+                  <button onClick={() => stepScript(i, -1)} disabled={at === 0} aria-label={`${name}: previous step`} className="rounded-lg border px-3 py-1 disabled:opacity-40">◀</button>
+                  <span className="w-10 text-center text-xs tabular-nums text-zinc-500">{at}/{steps.length}</span>
+                  <button onClick={() => stepScript(i, 1)} disabled={at >= steps.length} aria-label={`${name}: next step`} className="rounded-lg border px-3 py-1 disabled:opacity-40">▶</button>
+                </div>
+              );
+            })}
           </div>
         </details>
 
@@ -280,8 +308,14 @@ export default function Home() {
         <ol className="flex flex-col gap-2" aria-live="polite">
           {lines.map((l, i) => (
             <li key={i}>
-              {l.speaker && <span className="font-semibold">{l.speaker}: </span>}
-              {l.text}
+              {l.speaker === "Presenter" ? (
+                <span className="text-violet-700 italic dark:text-violet-300">▸ {l.text}</span>
+              ) : (
+                <>
+                  {l.speaker && <span className="font-semibold">{l.speaker}: </span>}
+                  {l.text}
+                </>
+              )}
             </li>
           ))}
           {partial && <li className="text-zinc-500 italic">{partial}</li>}
