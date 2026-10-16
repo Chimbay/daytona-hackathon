@@ -1,22 +1,24 @@
 import { Graph, layout as dagreLayout } from "@dagrejs/dagre";
-import { visibleNodes, type Board, type BoardNode } from "./board";
+import { replaced, visibleNodes, type Board, type BoardNode } from "./board";
 
 export const NODE_W = 220;
 
-export type Placed = BoardNode & { x: number; y: number; h: number };
+export type Placed = BoardNode & { x: number; y: number; h: number; was: string[]; pending: boolean };
 export type PlacedEdge = { key: string; d: string; label?: string; mx: number; my: number };
 
 // shortcut: height guessed from label length, not measured; measure DOM if labels overflow.
-const nodeHeight = (n: BoardNode) =>
-  56 + Math.ceil(n.label.length / 26) * 20 + (n.source ? 20 : 0);
+const nodeHeight = (n: BoardNode, extraLines: number) =>
+  56 + Math.ceil(n.label.length / 26) * 20 + (n.source ? 20 : 0) + extraLines * 18;
 
-export function layoutBoard(board: Board) {
+const MAX_WAS = 2; // older history stays in memory, not on the card
+
+export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set()) {
   const g = new Graph();
   g.setGraph({ rankdir: "LR", nodesep: 28, ranksep: 90, marginx: 24, marginy: 24 });
   g.setDefaultEdgeLabel(() => ({}));
 
-  const nodes = visibleNodes(board);
-  for (const n of nodes) g.setNode(n.id, { width: NODE_W, height: nodeHeight(n) });
+  const nodes = visibleNodes(board).map((n) => ({ ...n, was: replaced(board, n.id).slice(0, MAX_WAS), pending: pending.has(n.id) }));
+  for (const n of nodes) g.setNode(n.id, { width: NODE_W, height: nodeHeight(n, n.was.length + (n.pending ? 1 : 0)) });
   for (const e of board.edges) if (g.hasNode(e.from) && g.hasNode(e.to)) g.setEdge(e.from, e.to);
   dagreLayout(g);
 

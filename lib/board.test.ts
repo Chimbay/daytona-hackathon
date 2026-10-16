@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyEdits, emptyBoard, visibleNodes } from "./board.ts";
+import { applyEdits, emptyBoard, replaced, visibleNodes } from "./board.ts";
 
 const idea = (id: string, label = id) => ({ id, label, kind: "idea" as const });
 
@@ -39,4 +39,12 @@ test("remove drops the node and its edges", () => {
   ]);
   assert.deepEqual(b.nodes.map((n) => n.id), ["a"]);
   assert.deepEqual(b.edges, []);
+});
+
+test("replaced walks the supersede chain newest first", () => {
+  let b = applyEdits(emptyBoard, [{ op: "add", node: idea("a", "free tier") }]);
+  b = applyEdits(b, [{ op: "supersede", id: "a", node: idea("b", "trial") }]);
+  b = applyEdits(b, [{ op: "supersede", id: "b", node: idea("c", "30-day trial") }]);
+  assert.deepEqual(replaced(b, "c"), ["trial", "free tier"]);
+  assert.deepEqual(replaced(b, "a"), []);
 });

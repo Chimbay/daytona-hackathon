@@ -20,6 +20,7 @@ export default function Home() {
   const boardRef = useRef(board);
   const [lines, setLines] = useState<Line[]>([]);
   const [notes, setNotes] = useState<string[]>([]);
+  const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const [speakers, setSpeakers] = useState("Maya, Dev, Sam");
   const [speaker, setSpeaker] = useState("Maya");
   const speakerRef = useRef(speaker);
@@ -39,12 +40,19 @@ export default function Home() {
   const research = useCallback(
     async ({ question, nodeId }: { question: string; nodeId: string }) => {
       note(`Researching: ${question}`);
+      setPending((p) => new Set(p).add(nodeId));
       try {
         const { fact, source } = await post<{ fact: string; source: string }>("/api/research", { question, sessionId: sid(), nodeId });
         apply(factEdits(nodeId, fact, source));
         note(`Pinned: ${fact}`);
       } catch (e) {
         note(`No answer for "${question}": ${(e as Error).message}`);
+      } finally {
+        setPending((p) => {
+          const next = new Set(p);
+          next.delete(nodeId);
+          return next;
+        });
       }
     },
     [apply],
@@ -82,6 +90,7 @@ export default function Home() {
     setBoard(emptyBoard);
     setLines([]);
     setNotes([]);
+    setPending(new Set());
     setStep(0);
     session.current = "";
   };
@@ -107,8 +116,8 @@ export default function Home() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
-      <section className="min-h-[60vh] flex-1 rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
-        <Board board={board} />
+      <section className="min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
+        <Board board={board} pending={pending} />
       </section>
 
       <aside className="flex w-full shrink-0 flex-col gap-3 text-sm md:w-80">

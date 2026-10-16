@@ -77,3 +77,9 @@ export const factEdits = (nodeId: string, fact: string, source: string): Edit[] 
   { op: "add", node: { id: `fact-${nodeId}`, label: fact, kind: "fact", source } },
   { op: "link", from: nodeId, to: `fact-${nodeId}` },
 ];
+
+// Labels this node replaced, newest first: the trail shown as "was: …" on the board.
+export function replaced(board: Board, id: string): string[] {
+  const prev = board.nodes.find((n) => n.supersededBy === id);
+  return prev ? [prev.label, ...replaced(board, prev.id)] : [];
+}
