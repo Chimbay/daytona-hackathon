@@ -1,12 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Board from "../components/Board";
+import DiscussionSidebar from "../components/DiscussionSidebar";
 import HistoryPanel from "../components/HistoryPanel";
 import MicMeter from "../components/MicMeter";
+import ReplayBar from "../components/ReplayBar";
+import TypeInput from "../components/TypeInput";
+import EmptyHint from "../components/EmptyHint";
+import ExportMenu from "../components/ExportMenu";
 import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { branchScript, clipScript, demoScript, type Step } from "@/lib/demo-script";
+import * as discussions from "@/lib/discussions";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
+import { useBoardHistory } from "@/lib/useBoardHistory";
 
 type Line = { speaker?: string; text: string };
 
@@ -48,10 +55,14 @@ export default function Home() {
   const [history, setHistory] = useState<{ id: string; session: string } | null>(null);
   const closeHistory = useCallback(() => setHistory(null), []);
 
+  const replay = useBoardHistory();
+  const { record } = replay;
   const apply = useCallback((edits: Edit[]) => {
-    boardRef.current = applyEdits(boardRef.current, edits);
+    const before = boardRef.current;
+    boardRef.current = applyEdits(before, edits);
     setBoard(boardRef.current);
-  }, []);
+    record(before, boardRef.current, edits);
+  }, [record]);
   // Switching to another version of an idea changes the real board, so the next chunk builds on it.
   const switchTo = useCallback((id: string) => {
     boardRef.current = activate(boardRef.current, id);
@@ -63,8 +74,10 @@ export default function Home() {
     async ({ question, nodeId }: { question: string; nodeId: string }) => {
       note(`Researching: ${question}`);
       setPending((p) => new Set(p).add(nodeId));
+      const s = sid();
       try {
-        const { fact, source, snapshot } = await post<{ fact: string; source: string; snapshot?: string }>("/api/research", { question, sessionId: sid(), nodeId });
+        const { fact, source, snapshot } = await post<{ fact: string; source: string; snapshot?: string }>("/api/research", { question, sessionId: s, nodeId });
+        if (session.current !== s) return; // board was reset while researching
         apply(factEdits(nodeId, fact, source, snapshot));
         note(`Pinned: ${fact}`);
       } catch (e) {
@@ -85,12 +98,14 @@ export default function Home() {
       const line = { speaker: chunk.speaker ?? speakerRef.current, text: chunk.text };
       setLines((l) => [...l, line]);
       queue.current = queue.current.then(async () => {
+        const s = sid();
         try {
           const r = await post<{ edits: Edit[]; research?: { question: string; nodeId: string } }>("/api/board", {
             board: boardRef.current,
             chunk: line,
-            sessionId: sid(),
+            sessionId: s,
           });
+          if (session.current !== s) return; // board was reset while the model was thinking
           apply(r.edits);
           // Research runs alongside later chunks; it only adds its own fact node.
           if (r.research) void research(r.research);
@@ -107,6 +122,7 @@ export default function Home() {
 
   const reset = () => {
     stop();
+    setCurrent("");
     audio.current?.pause();
     boardRef.current = emptyBoard;
     setBoard(emptyBoard);
@@ -115,15 +131,57 @@ export default function Home() {
     setPending(new Set());
     setScripted((s) => ({ ...s, step: 0 }));
     setHistory(null);
+    replay.clear();
     session.current = "";
+  };
+
+  // Previous discussions (localStorage). Each one's id is its memory session id, so history still works after reopening.
+  const [saved, setSaved] = useState<discussions.Discussion[]>([]);
+  const [current, setCurrent] = useState("");
+  const skipSave = useRef(false); // reopening shouldn't bump the discussion to the top
+  useEffect(() => setSaved(discussions.list()), []); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    if (skipSave.current) return void (skipSave.current = false);
+    if (!board.nodes.length && !lines.length) return;
+    const t = setTimeout(() => {
+      const id = sid();
+      setSaved(discussions.save({ id, title: discussions.autoTitle(board), updatedAt: Date.now(), board, lines }));
+      setCurrent(id);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [board, lines]);
+  const openDiscussion = (d: discussions.Discussion) => {
+    if (d.id === session.current) return;
+    reset();
+    skipSave.current = true;
+    boardRef.current = d.board;
+    setBoard(d.board);
+    setLines(d.lines);
+    session.current = d.id;
+    setCurrent(d.id);
+  };
+  const removeDiscussion = (id: string) => {
+    if (id === session.current) reset();
+    setSaved(discussions.remove(id));
   };
 
   // Fallback: play the recorded brainstorm aloud and transcribe it through the same path as the mic.
   const playClip = (file: Blob) => {
     reset();
     audio.current = new Audio(URL.createObjectURL(file));
-    void audio.current.play();
+    // Transcription still runs if the browser blocks or can't decode playback.
+    audio.current.play().catch((e: Error) => note(`Clip playback failed: ${e.message}`));
     void startFile(file);
+  };
+
+  const playDemoClip = async () => {
+    try {
+      const res = await fetch("/demo/brainstorm.wav");
+      if (!res.ok) throw new Error(`demo clip ${res.status}`);
+      playClip(await res.blob());
+    } catch (e) {
+      note(`Demo clip unavailable: ${(e as Error).message}`);
+    }
   };
 
   // Forward plays one step on top of the current board, so clicks made along the way stick.
@@ -135,7 +193,9 @@ export default function Home() {
     if (to < 0 || to > steps.length) return;
     if (dir === 1 && scripted.script === script) {
       const s = steps[at];
-      boardRef.current = playStep(boardRef.current, s);
+      const before = boardRef.current;
+      boardRef.current = playStep(before, s);
+      if (!s.activate) record(before, boardRef.current, s.edits); // same replay timeline as live edits
       setLines((l) => [...l, { speaker: s.speaker, text: s.text }]);
     } else {
       reset();
@@ -150,17 +210,27 @@ export default function Home() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
+      <DiscussionSidebar
+        items={saved}
+        currentId={current}
+        onNew={reset}
+        onOpen={openDiscussion}
+        onRename={(id, title) => setSaved(discussions.rename(id, title))}
+        onRemove={removeDiscussion}
+      />
       <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
-        <Board board={board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
+        <Board board={replay.shown ?? board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
+        <EmptyHint show={board.nodes.length === 0} />
         {/* Live captions so the room sees words land before the board redraws. */}
         {(partial || (live && lines.length > 0)) && (
           <p
             aria-hidden
-            className="pointer-events-none absolute inset-x-6 bottom-6 mx-auto max-w-3xl rounded-xl bg-white/85 px-5 py-3 text-center text-xl leading-snug shadow-sm backdrop-blur dark:bg-black/70"
+            className="pointer-events-none absolute inset-x-6 bottom-16 mx-auto max-w-3xl rounded-xl bg-white/85 px-5 py-3 text-center text-xl leading-snug shadow-sm backdrop-blur dark:bg-black/70"
           >
             {partial ? <span>{partial}</span> : <span className="text-zinc-500">{lines.at(-1)!.text}</span>}
           </p>
         )}
+        <ReplayBar {...replay} />
       </section>
 
       <aside className="flex w-full shrink-0 flex-col gap-3 text-sm md:w-80">
@@ -204,11 +274,14 @@ export default function Home() {
           <input value={speakers} onChange={(e) => setSpeakers(e.target.value)} aria-label="Speaker names, comma separated" className="rounded border bg-transparent px-2 py-1 text-xs" />
         </fieldset>
 
+        <TypeInput speaker={speaker} onSend={(text) => onChunk({ text })} />
+        <ExportMenu board={board} lines={lines} />
+
         <details className="rounded-lg border px-3 py-2">
           <summary className="cursor-pointer text-xs text-zinc-500">Fallbacks</summary>
           <div className="mt-2 flex flex-col gap-2">
             <button
-              onClick={async () => playClip(await (await fetch("/demo/brainstorm.wav")).blob())}
+              onClick={() => void playDemoClip()}
               className="rounded-lg border px-3 py-2"
             >
               Play demo clip

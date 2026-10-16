@@ -22,6 +22,11 @@ const deprecatedStyle = "border-dashed bg-zinc-100 border-zinc-300 text-zinc-400
 // Ideas that didn't match anything when said: dashed and tinted until a link pulls them into the tree.
 const looseStyle = "border-dashed border-sky-400 bg-white/70 shadow-md shadow-sky-200/60 dark:border-sky-500 dark:bg-zinc-900/70 dark:shadow-sky-900/40";
 
+// Each top-level branch gets a muted accent (CSS vars in globals.css): a stripe and faint wash on its
+// cards, and its color on the edges into them. The topic and loose ideas stay neutral.
+const BRANCH_COLORS = 6;
+const branchColor = (b?: number) => (b === undefined ? undefined : `var(--branch-${b % BRANCH_COLORS})`);
+
 type Props = {
   board: BoardData;
   pending?: ReadonlySet<string>;
@@ -79,7 +84,8 @@ export default function Board({ board, pending, onSelect, selected, onActivate }
                 transition={{ d: move, opacity: { duration: 0.4, delay: 0.15 } }}
                 fill="none"
                 strokeWidth={2}
-                className="stroke-zinc-400 dark:stroke-zinc-600"
+                className={e.branch === undefined ? "stroke-zinc-400 dark:stroke-zinc-600" : undefined}
+                style={{ stroke: branchColor(e.branch), strokeOpacity: e.branch === undefined ? undefined : 0.75, transition: "stroke 0.5s" }}
               />
             ))}
             {edges.filter((e) => e.label).map((e) => (
@@ -110,7 +116,14 @@ export default function Board({ board, pending, onSelect, selected, onActivate }
               exit={{ x: n.ox, y: n.oy, opacity: 0, scale: 0.6, transition: leave }}
               transition={{ default: move, opacity: appear(n.x), scale: { ...move, delay: appear(n.x).delay } }}
               className={`absolute left-0 top-0 cursor-pointer overflow-hidden rounded-xl border-2 px-4 text-left shadow-sm outline-none transition-colors duration-500 focus-visible:ring-4 focus-visible:ring-sky-500 ${n.front ? "py-3" : "py-1 hover:border-violet-400"} ${n.deprecated ? deprecatedStyle : n.loose ? looseStyle : kindStyle[n.kind]} ${selected === n.id ? "ring-4 ring-violet-500" : ""}`}
-              style={{ height: n.front ? undefined : n.h, minHeight: n.h, zIndex: n.z }}
+              style={{
+                height: n.front ? undefined : n.h,
+                minHeight: n.h,
+                zIndex: n.z,
+                ...(branchColor(n.branch) && !n.deprecated && {
+                  backgroundImage: `linear-gradient(90deg, color-mix(in srgb, ${branchColor(n.branch)} 9%, transparent), transparent 55%)`,
+                }),
+              }}
               role="button"
               tabIndex={0}
               aria-label={
@@ -126,6 +139,9 @@ export default function Board({ board, pending, onSelect, selected, onActivate }
                 }
               }}
             >
+              {branchColor(n.branch) && !n.deprecated && (
+                <span aria-hidden className="absolute inset-y-0 left-0 w-1 transition-colors duration-500" style={{ background: branchColor(n.branch) }} />
+              )}
               {!n.front ? (
                 <p className="flex items-center gap-2 text-xs leading-4" style={{ height: PEEK - 10 }}>
                   <span className="shrink-0 font-semibold uppercase tracking-wide">{n.deprecated ? "old" : "branch"}</span>
