@@ -1,0 +1,7 @@
+Maya: Okay team, the goal for today is simple. How do we double our sign-ups next quarter?
+Dev: One idea. We hire two more sales reps to go after bigger accounts.
+Sam: Another idea. A referral program, where every user gets a free month for each friend they invite.
+Maya: Actually, instead of hiring sales reps, let's build a self-serve onboarding flow. It scales much better than people.
+Dev: Nice. And the referral program should send new users straight into that onboarding flow.
+Sam: But can we afford all of this? What was our Q3 revenue?
+Maya: Good question. Let's check the numbers, then ship self-serve onboarding first.
