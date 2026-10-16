@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import Board from "./components/Board";
 import HistoryPanel from "./components/HistoryPanel";
+import MicMeter from "./components/MicMeter";
 import { applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { demoScript } from "@/lib/demo-script";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
@@ -26,6 +27,9 @@ export default function Home() {
   const [speaker, setSpeaker] = useState("Maya");
   const speakerRef = useRef(speaker);
   const [step, setStep] = useState(0);
+  // Live-mic tuning; applies the next time the mic starts.
+  const [pause, setPause] = useState(1.2);
+  const [noisy, setNoisy] = useState(false);
   // One memory session per board, created on first use (not at prerender); Reset starts a new one.
   const session = useRef("");
   const sid = () => (session.current ||= crypto.randomUUID());
@@ -121,19 +125,41 @@ export default function Home() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
-      <section className="min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
+      <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
         <Board board={board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} />
+        {/* Live captions so the room sees words land before the board redraws. */}
+        {(partial || (live && lines.length > 0)) && (
+          <p
+            aria-hidden
+            className="pointer-events-none absolute inset-x-6 bottom-6 mx-auto max-w-3xl rounded-xl bg-white/85 px-5 py-3 text-center text-xl leading-snug shadow-sm backdrop-blur dark:bg-black/70"
+          >
+            {partial ? <span>{partial}</span> : <span className="text-zinc-500">{lines.at(-1)!.text}</span>}
+          </p>
+        )}
       </section>
 
       <aside className="flex w-full shrink-0 flex-col gap-3 text-sm md:w-80">
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => (live ? stop() : void startMic())}
+            onClick={() => (live ? stop() : void startMic({ silenceSecs: pause, threshold: noisy ? 0.6 : undefined }))}
             className={`flex-1 rounded-lg px-3 py-2 font-medium ${live ? "bg-red-600 text-white" : "bg-foreground text-background"}`}
           >
             {status === "connecting" ? "Connecting…" : live ? "Stop listening" : "Start mic"}
           </button>
           <button onClick={reset} className="rounded-lg border px-3 py-2">Reset</button>
+        </div>
+        <MicMeter active={status === "live"} />
+        <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500">
+          <label className="flex items-center gap-1">
+            Pause before sending
+            <select value={pause} onChange={(e) => setPause(Number(e.target.value))} disabled={live} className="rounded border bg-transparent px-1 py-0.5">
+              {[0.8, 1.2, 1.5, 2].map((s) => <option key={s} value={s}>{s}s</option>)}
+            </select>
+          </label>
+          <label className="flex items-center gap-1">
+            <input type="checkbox" checked={noisy} onChange={(e) => setNoisy(e.target.checked)} disabled={live} />
+            Noisy room
+          </label>
         </div>
 
         <fieldset className="flex flex-col gap-2">

@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { floatToPcm16, openScribe, SAMPLE_RATE, streamPcm, type Chunk, type ScribeConnection } from "./scribe";
+import { floatToPcm16, openScribe, SAMPLE_RATE, streamPcm, type Chunk, type ScribeConnection, type Vad } from "./scribe";
 
-export type { Chunk };
+export type { Chunk, Vad };
 export type TranscriptStatus = "idle" | "connecting" | "live" | "error";
 
 async function fetchToken(): Promise<string> {
@@ -52,7 +52,7 @@ export function useTranscript(onChunk: (chunk: Chunk) => void) {
   }, []);
 
   const start = useCallback(
-    async (src: "mic" | Blob | string) => {
+    async (src: "mic" | Blob | string, vad?: Vad) => {
       stop();
       setError(null);
       setStatus("connecting");
@@ -68,7 +68,7 @@ export function useTranscript(onChunk: (chunk: Chunk) => void) {
             setStatus("error");
           },
           onClose: () => setStatus((s) => (s === "error" ? s : "idle")),
-        });
+        }, vad);
         conn.current = c;
         setStatus("live");
         if (pcm) {
@@ -90,7 +90,7 @@ export function useTranscript(onChunk: (chunk: Chunk) => void) {
     status,
     partial,
     error,
-    startMic: useCallback(() => start("mic"), [start]),
+    startMic: useCallback((vad?: Vad) => start("mic", vad), [start]),
     startFile: useCallback((src: Blob | string) => start(src), [start]),
     stop,
   };
