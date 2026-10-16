@@ -2,7 +2,8 @@ import type { Edit } from "./board";
 
 // Scripted brainstorm with the edits Claude should produce per line.
 // Drives the offline demo now; later the eval set (expected board per transcript chunk).
-export type Step = { speaker: string; text: string; edits: Edit[] };
+// `activate`: a presenter click on a card behind a stack (switch branch), not something said.
+export type Step = { speaker: string; text: string; edits: Edit[]; activate?: string };
 
 export const demoScript: Step[] = [
   {
@@ -114,4 +115,42 @@ export const clipScript: Step[] = [
     text: "Good question. Let's check the numbers, then ship self-serve onboarding first.",
     edits: [{ op: "update", id: "self-serve", label: "Ship self-serve onboarding first" }],
   },
+];
+
+const say = (speaker: string, text: string, edits: Edit[]): Step => ({ speaker, text, edits });
+const idea = (id: string, label: string, speaker: string, quote: string) => ({ id, label, kind: "idea" as const, speaker, quote });
+
+// Mini demo of the branching board: stacked versions, a floating idea that joins later,
+// the room building on a hidden branch (+N count), and the presenter switching branches.
+export const branchScript: Step[] = [
+  say("Maya", "How do we get more teams onto the product?", [
+    { op: "add", node: idea("goal", "Grow team adoption", "Maya", "How do we get more teams onto the product?") },
+  ]),
+  say("Dev", "What if we do a free tier for small teams?", [
+    { op: "add", node: idea("free-tier", "Free tier for small teams", "Dev", "a free tier for small teams") },
+    { op: "link", from: "goal", to: "free-tier" },
+  ]),
+  say("Sam", "Random thought, our docs site is painfully slow.", [
+    { op: "add", node: idea("docs", "Speed up the docs site", "Sam", "our docs site is painfully slow") },
+  ]),
+  say("Maya", "Actually, scrap the free tier. Make it a 30-day team trial.", [
+    { op: "supersede", id: "free-tier", node: idea("trial", "30-day team trial", "Maya", "Make it a 30-day team trial.") },
+  ]),
+  say("Dev", "The trial should walk teams through Slack setup.", [
+    { op: "add", node: idea("slack", "Guided Slack setup", "Dev", "walk teams through Slack setup") },
+    { op: "link", from: "trial", to: "slack" },
+  ]),
+  { speaker: "Presenter", text: "Clicks the OLD free tier card to revisit it.", edits: [], activate: "free-tier" },
+  say("Sam", "Free tier could cap at five seats.", [
+    { op: "add", node: idea("seats", "Cap at five seats", "Sam", "cap at five seats") },
+    { op: "link", from: "free-tier", to: "seats" },
+  ]),
+  say("Dev", "And for the trial, two weeks is probably enough.", [
+    { op: "add", node: idea("two-weeks", "Two weeks is enough", "Dev", "two weeks is probably enough") },
+    { op: "link", from: "trial", to: "two-weeks" },
+  ]),
+  say("Maya", "Faster docs would help teams onboard on their own.", [
+    { op: "link", from: "goal", to: "docs", label: "self-onboarding" },
+  ]),
+  { speaker: "Presenter", text: "Clicks the trial branch to go back.", edits: [], activate: "trial" },
 ];
