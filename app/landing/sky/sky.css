@@ -1,0 +1,170 @@
+/* Plain CSS, not a module: next.config's Tailwind turbopack rule strips CSS-module hashing, so classes are sky- prefixed. */
+/* Tokens: daytime-to-dawn sky; dark scheme becomes a calm night sky. */
+.sky-page {
+  --sky-top: #bcd7f0;
+  --sky-mid: #e6e4f4;
+  --sky-low: #fbe7e1;
+  --sky-horizon: #fdf1e4;
+  --cloud: rgba(255, 255, 255, 0.95);
+  --cloud-shade: rgba(222, 226, 246, 0.9);
+  --ink: #1f2747;
+  --ink-soft: #454d6e;
+  --ink-faint: #5d6585;
+  --card: rgba(255, 255, 255, 0.74);
+  --card-edge: rgba(255, 255, 255, 0.9);
+  --card-shadow: 0 1px 2px rgba(60, 70, 120, 0.05), 0 18px 48px -18px rgba(90, 100, 160, 0.28);
+  --accent: #2f4fa8;
+  --accent-ink: #ffffff;
+  --rose: #a2415f;
+  --focus: #2f4fa8;
+  --star: transparent;
+
+  color: var(--ink);
+  font-family: var(--font-sky-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: clip;
+}
+
+@media (prefers-color-scheme: dark) {
+  .sky-page {
+    --sky-top: #0b1230;
+    --sky-mid: #161d45;
+    --sky-low: #2a2856;
+    --sky-horizon: #43355f;
+    --cloud: rgba(150, 156, 205, 0.22);
+    --cloud-shade: rgba(110, 112, 170, 0.18);
+    --ink: #eef0fb;
+    --ink-soft: #c4c8e6;
+    --ink-faint: #a5aad0;
+    --card: rgba(30, 36, 78, 0.72);
+    --card-edge: rgba(160, 170, 230, 0.18);
+    --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 18px 48px -18px rgba(0, 0, 0, 0.6);
+    --accent: #c9d4ff;
+    --accent-ink: #141a3d;
+    --rose: #f2a7bd;
+    --focus: #f2c6d4;
+    --star: rgba(255, 255, 255, 0.85);
+  }
+}
+
+.sky-display {
+  font-family: var(--font-sky-serif), ui-serif, Georgia, serif;
+}
+
+.sky-sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 42%, var(--sky-low) 78%, var(--sky-horizon) 100%);
+}
+
+.sky-layer {
+  position: absolute;
+  inset: -10% -20%;
+  will-change: transform;
+}
+
+/* Slow horizontal drift; each depth gets its own period so layers never sync up. */
+.sky-drift {
+  position: absolute;
+  inset: 0;
+  animation: drift var(--drift, 120s) ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes drift {
+  from { transform: translate3d(calc(var(--range, 6vw) * -1), 0, 0); }
+  to { transform: translate3d(var(--range, 6vw), 0, 0); }
+}
+
+.sky-cloud {
+  position: absolute;
+  width: 340px;
+  height: 140px;
+}
+
+.sky-puff {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, var(--cloud) 0%, var(--cloud) 45%, transparent 100%);
+}
+
+.sky-puff-shade {
+  background: radial-gradient(closest-side, var(--cloud-shade) 0%, transparent 100%);
+}
+
+.sky-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 9999px;
+  background: var(--star);
+  animation: twinkle 7s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+/* Cards float, breathing up and down very slowly. */
+.sky-float {
+  animation: float var(--float, 11s) ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+  will-change: transform;
+}
+
+@keyframes float {
+  from { transform: translate3d(0, -5px, 0); }
+  to { transform: translate3d(0, 6px, 0); }
+}
+
+.sky-card {
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  box-shadow: var(--card-shadow);
+}
+
+.sky-link {
+  outline: none;
+  transition: opacity 0.4s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sky-link:hover {
+  transform: translate3d(0, -2px, 0);
+}
+
+.sky-link:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.sky-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.sky-secondary {
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+}
+
+.sky-was-line {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--ink-faint) 70%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-drift,
+  .sky-float,
+  .sky-star {
+    animation: none;
+  }
+  .sky-link,
+  .sky-link:hover {
+    transition: none;
+    transform: none;
+  }
+}
