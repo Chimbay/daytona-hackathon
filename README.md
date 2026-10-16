@@ -2,7 +2,7 @@
 
 A whiteboard that listens to a group brainstorm and keeps redrawing itself to match where the conversation is now. When the group changes its mind, the old idea is **superseded**, not appended. When someone asks a question that needs internal data ("What was our Q3 revenue?"), a research agent reads the team's wiki from an ephemeral Daytona sandbox through an Anchor cloud browser and pins the answer to the board with its source.
 
-Built at the Daytona HackSprint NYC, October 2026. **Live:** https://imagine-lac-xi.vercel.app
+Built at the Daytona HackSprint NYC, October 2026. **Live:** https://imagine-lac-xi.vercel.app (landing page) · board at https://imagine-lac-xi.vercel.app/board
 
 > No demo GIF yet. To see the demo, open the live site, open **Fallbacks**, and press **Play demo clip**.
 
@@ -85,7 +85,11 @@ Open the **Fallbacks** panel in the sidebar:
 
 ```
 app/
-  page.tsx                   presenter screen: mic, speaker picker, fallbacks, transcript
+  page.tsx                   landing page (re-exports landing/sky/SkyLanding.tsx)
+  landing/sky/               drifting-sky landing page
+  landing/sections/          problem / ask-safely / memory explainer sections used by the landing page
+  board/page.tsx             presenter screen: mic + level meter, live captions, speaker picker, fallbacks
+  components/MicMeter.tsx    live mic input level
   components/Board.tsx       animated board (Motion); click a card for its history
   components/HistoryPanel.tsx  idea history loaded from Agent Memory
   api/stt-token/             mint single-use ElevenLabs realtime token
@@ -93,7 +97,6 @@ app/
   api/research/              Daytona sandbox + Anchor -> page text -> Haiku -> {fact, source} (+ memory write)
   api/memory/                persist edits to Agent Memory
   api/history/               idea supersede chains from Agent Memory
-  dev/stt/                   scratch page for testing STT
 instrumentation.ts           registers Arize tracing on the Node runtime
 lib/
   board.ts                   graph model + applyEdits (supersede, link, ...)
