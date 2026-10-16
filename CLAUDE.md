@@ -13,9 +13,18 @@ Pitch angle (prior art covers single-speaker "voice → mind map"): the board tr
 
 ## Timeline
 
-- **1:00 PM** — mic → transcript → Claude → board redraws, end to end
-- **2:30 PM** — Anchor research from Daytona, memory (idea history), Arize tracing + evals
-- **3:15 PM** — demo video (<2 min) recorded, Devpost page done, repo public
+Checked against `main` (status as of 2026-10-16):
+
+- [ ] **1:00 PM** — mic → transcript → Claude → board redraws, end to end
+  - Built on main: `/api/stt-token`, `useTranscript`, `/api/board` + `lib/brain.ts`, board renderer. Not wired: `app/page.tsx` still replays `demoScript`, and the live mic path runs only on `/dev/stt`.
+- [ ] **2:30 PM** — Anchor research from Daytona, memory (idea history), Arize tracing + evals
+  - [ ] Anchor research from Daytona — `/api/research` is in open PR #6, not on main
+  - [ ] Memory (SurrealDB) — no code on main yet; `SPECTRON_*` keys are in `.env.local` and on Vercel
+  - [ ] Arize tracing + evals — not started
+- [ ] **3:15 PM** — demo video (<2 min) recorded, Devpost page done, repo public
+  - [ ] Demo video — not recorded
+  - [ ] Devpost page — not checkable from the repo
+  - [x] Repo public — `Chimbay/daytona-hackathon` is already PUBLIC (the rule says public at submission)
 
 ## Submission & judging
 
@@ -28,7 +37,8 @@ Pitch angle (prior art covers single-speaker "voice → mind map"): the board tr
 - Next.js 16 (App Router, TS, Tailwind) boilerplate at repo root; `npm run dev`. Renderer: Next.js + `@dagrejs/dagre` + `motion` (installed on `board-core`).
 - Verified working: Bedrock (`us.anthropic.claude-haiku-5-5`, `us.anthropic.claude-sonnet-5-5`, us-west-2), Daytona create/exec/delete, Anchor MCP, ElevenLabs realtime token (`POST /v1/single-use-token/realtime_scribe`; key is restricted, `/v1/user` returns 401 — that's fine).
 - Keys in `.env.local`: `AWS_*`, `DAYTONA_API_KEY`, `DAYTONA_API_URL`, `ANCHOR_API_KEY`, `ELEVENLABS_API_KEY`, `SURREAL`, `arize_api` (last two unverified, may need renaming to what their SDKs expect).
-- Unverified: Bedrock model/region access on the lab account; Anchor hostnames beyond `api.anchorbrowser.io` (the browser CDP connection may use another host — check before tightening the Daytona allowlist); Anchor reaching a Daytona preview URL; speaker labels in Scribe realtime mode.
+- Research (`POST /api/research`, verified ~4–8s): Anchor uses `api.anchorbrowser.io` (REST) + `connect.anchorbrowser.io` (CDP websocket; the URL is session-scoped and doesn't carry the API key). Anchor reaches Daytona preview URLs if the browser sends `X-Daytona-Skip-Preview-Warning: true`. Our Daytona org is Tier 1/2: per-sandbox `domainAllowList` is rejected (route falls back to the org egress policy). Daytona secrets are org Secrets referenced by name (`anchor-api-key`, substituted only for `api.anchorbrowser.io`); Node in the sandbox needs `NODE_USE_ENV_PROXY=1`. Anchor `execute-code` is not enabled on our team. Fake wiki: `wiki/`, relaunch with `node --env-file=.env.local wiki/launch.mts`, URL in `WIKI_URL`.
+- Unverified: Bedrock model/region access on the lab account; speaker labels in Scribe realtime mode.
 
 ## Architecture (one sponsor per layer)
 
