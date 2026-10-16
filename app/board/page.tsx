@@ -4,9 +4,11 @@ import { useCallback, useRef, useState } from "react";
 import Board from "../components/Board";
 import HistoryPanel from "../components/HistoryPanel";
 import MicMeter from "../components/MicMeter";
+import ReplayBar from "../components/ReplayBar";
 import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { demoScript } from "@/lib/demo-script";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
+import { useBoardHistory } from "@/lib/useBoardHistory";
 
 type Line = { speaker?: string; text: string };
 
@@ -39,10 +41,14 @@ export default function Home() {
   const [history, setHistory] = useState<{ id: string; session: string } | null>(null);
   const closeHistory = useCallback(() => setHistory(null), []);
 
+  const replay = useBoardHistory();
+  const { record } = replay;
   const apply = useCallback((edits: Edit[]) => {
-    boardRef.current = applyEdits(boardRef.current, edits);
+    const before = boardRef.current;
+    boardRef.current = applyEdits(before, edits);
     setBoard(boardRef.current);
-  }, []);
+    record(before, boardRef.current, edits);
+  }, [record]);
   // Switching to another version of an idea changes the real board, so the next chunk builds on it.
   const switchTo = useCallback((id: string) => {
     boardRef.current = activate(boardRef.current, id);
@@ -110,6 +116,7 @@ export default function Home() {
     setPending(new Set());
     setStep(0);
     setHistory(null);
+    replay.clear();
     session.current = "";
   };
 
@@ -146,7 +153,7 @@ export default function Home() {
   return (
     <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
       <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
-        <Board board={board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
+        <Board board={replay.shown ?? board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
         {/* Live captions so the room sees words land before the board redraws. */}
         {(partial || (live && lines.length > 0)) && (
           <p
@@ -156,6 +163,7 @@ export default function Home() {
             {partial ? <span>{partial}</span> : <span className="text-zinc-500">{lines.at(-1)!.text}</span>}
           </p>
         )}
+        <ReplayBar {...replay} />
       </section>
 
       <aside className="flex w-full shrink-0 flex-col gap-3 text-sm md:w-80">
