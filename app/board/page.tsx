@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Board from "../components/Board";
+import DiscussionSidebar from "../components/DiscussionSidebar";
 import HistoryPanel from "../components/HistoryPanel";
 import MicMeter from "../components/MicMeter";
 import ReplayBar from "../components/ReplayBar";
@@ -10,6 +11,7 @@ import EmptyHint from "../components/EmptyHint";
 import ExportMenu from "../components/ExportMenu";
 import { activate, applyEdits, emptyBoard, factEdits, type Board as BoardData, type Edit } from "@/lib/board";
 import { demoScript } from "@/lib/demo-script";
+import * as discussions from "@/lib/discussions";
 import { useTranscript, type Chunk } from "@/lib/useTranscript";
 import { useBoardHistory } from "@/lib/useBoardHistory";
 
@@ -111,6 +113,7 @@ export default function Home() {
 
   const reset = () => {
     stop();
+    setCurrent("");
     audio.current?.pause();
     boardRef.current = emptyBoard;
     setBoard(emptyBoard);
@@ -121,6 +124,36 @@ export default function Home() {
     setHistory(null);
     replay.clear();
     session.current = "";
+  };
+
+  // Previous discussions (localStorage). Each one's id is its memory session id, so history still works after reopening.
+  const [saved, setSaved] = useState<discussions.Discussion[]>([]);
+  const [current, setCurrent] = useState("");
+  const skipSave = useRef(false); // reopening shouldn't bump the discussion to the top
+  useEffect(() => setSaved(discussions.list()), []); // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    if (skipSave.current) return void (skipSave.current = false);
+    if (!board.nodes.length && !lines.length) return;
+    const t = setTimeout(() => {
+      const id = sid();
+      setSaved(discussions.save({ id, title: discussions.autoTitle(board), updatedAt: Date.now(), board, lines }));
+      setCurrent(id);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [board, lines]);
+  const openDiscussion = (d: discussions.Discussion) => {
+    if (d.id === session.current) return;
+    reset();
+    skipSave.current = true;
+    boardRef.current = d.board;
+    setBoard(d.board);
+    setLines(d.lines);
+    session.current = d.id;
+    setCurrent(d.id);
+  };
+  const removeDiscussion = (id: string) => {
+    if (id === session.current) reset();
+    setSaved(discussions.remove(id));
   };
 
   // Fallback: play the recorded brainstorm aloud and transcribe it through the same path as the mic.
@@ -155,6 +188,14 @@ export default function Home() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6 md:flex-row">
+      <DiscussionSidebar
+        items={saved}
+        currentId={current}
+        onNew={reset}
+        onOpen={openDiscussion}
+        onRename={(id, title) => setSaved(discussions.rename(id, title))}
+        onRemove={removeDiscussion}
+      />
       <section className="relative min-h-[60vh] min-w-0 flex-1 overflow-hidden rounded-2xl bg-zinc-50 p-6 dark:bg-zinc-950">
         <Board board={replay.shown ?? board} pending={pending} selected={history?.id} onSelect={(id) => setHistory({ id, session: sid() })} onActivate={switchTo} />
         <EmptyHint show={board.nodes.length === 0} />
