@@ -9,7 +9,7 @@ const MODEL = process.env.RESEARCH_MODEL ?? "us.anthropic.claude-haiku-4-5-20251
 const client = new AnthropicBedrock({ awsRegion: process.env.AWS_REGION ?? "us-west-2" });
 
 const SYSTEM = `You answer a team's question from their internal wiki. You get the question and every wiki page (index, url, title, text).
-Pick the single page that best answers the question and return its index and the answer as a short sticky-note fact (at most 12 words, include the key numbers, no filler).
+Pick the single page that best answers the question and return its index and the answer as a short sticky-note fact (hard limit 10 words; only the one or two numbers that answer the question; no breakdowns or lists).
 State the figures the page gives; no opinions or conclusions ("likely affordable"), no guessing beyond the page. Questions may be loosely phrased ("how are sales?" means revenue).
 If no page answers the question, return page -1 and an empty fact.`;
 
