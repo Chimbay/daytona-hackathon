@@ -1,6 +1,7 @@
 import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk";
 import type { Board, BoardNode, Edit } from "./board.ts";
 import { demoScript } from "./demo-script.ts";
+import { setOutput, withSpan } from "./tracing.ts";
 
 export type Chunk = { speaker?: string; text: string };
 export type Research = { question: string; nodeId: string };
@@ -79,7 +80,21 @@ const OUTPUT_SCHEMA = {
   additionalProperties: false,
 };
 
-export async function boardEdits(board: Board, chunk: Chunk): Promise<BrainResult> {
+export function boardEdits(board: Board, chunk: Chunk): Promise<BrainResult> {
+  return withSpan("board-edits", "CHAIN", chunk, async (span) => {
+    span.setAttributes({ "board.speaker": chunk.speaker ?? "", "board.chunk": chunk.text, "board.nodes": board.nodes.length });
+    const result = await callModel(board, chunk);
+    setOutput(span, result, {
+      "board.edit_count": result.edits.length,
+      "board.edit_ops": result.edits.map((e) => e.op).join(","),
+      "board.research_flagged": !!result.research,
+      ...(result.research && { "board.research_question": result.research.question }),
+    });
+    return result;
+  });
+}
+
+async function callModel(board: Board, chunk: Chunk): Promise<BrainResult> {
   const live = board.nodes.filter((n) => !n.supersededBy).map(({ id, label, kind }) => ({ id, label, kind }));
   const res = await client.messages.create({
     model: MODEL,

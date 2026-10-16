@@ -1,7 +1,9 @@
 // Research agent: runs INSIDE an ephemeral Daytona sandbox (Node >= 22, zero deps).
 //
-// Opens an Anchor cloud browser, drives it over CDP to the internal wiki page that answers the
-// question, and prints only {"fact","source"} JSON. $ANCHOR_API_KEY here is a Daytona secret
+// Opens an Anchor cloud browser, drives it over CDP to the internal wiki, reads the index and the
+// text of every linked page, and prints {"pages":[{href,title,text}],"fallback":{fact,source}|null}.
+// The route outside the sandbox has an LLM pick the page and extract the answer; "fallback" is the
+// keyword match, used if that LLM call fails. $ANCHOR_API_KEY here is a Daytona secret
 // placeholder: the real key is swapped in at the sandbox's egress, so this process never sees it.
 // The CDP URL Anchor returns is session-scoped and does not contain the API key.
 //
@@ -61,7 +63,7 @@ async function openPage(cdp) {
       await loaded;
     },
     async eval(expression) {
-      const r = await s("Runtime.evaluate", { expression, returnByValue: true });
+      const r = await s("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
       if (r.exceptionDetails) throw new Error(`page eval failed: ${r.exceptionDetails.text}`);
       return r.result.value;
     },
@@ -85,13 +87,19 @@ async function research(question, wiki) {
   try {
     const page = await openPage(cdp);
     await page.goto(wiki.replace(/\/?$/, "/"));
-    const links = await page.eval(
-      `[...document.querySelectorAll('a[data-keywords]')].map(a => ({ href: a.href, kw: a.dataset.keywords }))`,
-    );
-    const href = bestLink(question, links);
-    if (!href) return { error: "no wiki page matches the question" };
-    await page.goto(href);
-    return await page.eval(`({ fact: document.querySelector('[data-fact]').textContent.trim(), source: location.href })`);
+    // The wiki is small: fetch every linked page in parallel from inside the browser (same origin,
+    // same extra headers) instead of navigating one by one.
+    const pages = await page.eval(`Promise.all([...document.querySelectorAll('a[data-keywords]')].map(async (a) => {
+      const doc = new DOMParser().parseFromString(await (await fetch(a.href)).text(), "text/html");
+      return { href: a.href, title: a.textContent.trim(), kw: a.dataset.keywords,
+        fact: doc.querySelector("[data-fact]")?.textContent.trim() ?? null,
+        text: doc.body.textContent.replace(/\\s+/g, " ").trim() };
+    }))`);
+    const best = pages.find((p) => p.href === bestLink(question, pages));
+    return {
+      pages: pages.map(({ href, title, text }) => ({ href, title, text })),
+      fallback: best?.fact ? { fact: best.fact, source: best.href } : null,
+    };
   } finally {
     cdp.close();
     await anchor("DELETE", `/sessions/${data.id}`).catch(() => {});

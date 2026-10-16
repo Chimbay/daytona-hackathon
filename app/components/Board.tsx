@@ -13,7 +13,9 @@ const kindStyle: Record<NodeKind, string> = {
   fact: "bg-amber-50 border-amber-400 dark:bg-amber-950 dark:border-amber-600",
 };
 
-export default function Board({ board, pending }: { board: BoardData; pending?: ReadonlySet<string> }) {
+type Props = { board: BoardData; pending?: ReadonlySet<string>; onSelect?: (id: string) => void; selected?: string | null };
+
+export default function Board({ board, pending, onSelect, selected }: Props) {
   const { nodes, edges, width, height } = layoutBoard(board, pending);
   const frame = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -74,11 +76,23 @@ export default function Board({ board, pending }: { board: BoardData; pending?: 
               animate={{ x: n.x, y: n.y, opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.85 }}
               transition={spring}
-              className={`absolute left-0 top-0 rounded-xl border-2 px-4 py-3 shadow-sm ${kindStyle[n.kind]}`}
+              className={`absolute left-0 top-0 cursor-pointer rounded-xl border-2 px-4 py-3 text-left shadow-sm outline-none focus-visible:ring-4 focus-visible:ring-sky-500 ${kindStyle[n.kind]} ${selected === n.id ? "ring-4 ring-violet-500" : ""}`}
               style={{ width: NODE_W, minHeight: n.h }}
-              title={n.quote ? `“${n.quote}”` : undefined}
+              role="button"
+              tabIndex={0}
+              aria-label={`${n.label}. Show history`}
+              onClick={() => onSelect?.(n.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect?.(n.id);
+                }
+              }}
             >
               <p className="text-[15px] font-medium leading-5">{n.label}</p>
+              {n.quote && n.kind !== "fact" && (
+                <p className="mt-1 line-clamp-2 text-xs italic leading-4 text-zinc-600 dark:text-zinc-400">“{n.quote}”</p>
+              )}
               {n.was.map((w) => (
                 <p key={w} className="mt-1 truncate text-xs text-zinc-400 line-through decoration-zinc-400/70">
                   was: {w}
@@ -86,7 +100,7 @@ export default function Board({ board, pending }: { board: BoardData; pending?: 
               ))}
               {n.speaker && <p className="mt-1 text-xs text-zinc-500">{n.speaker}</p>}
               {n.source && (
-                <a href={n.source} target="_blank" rel="noreferrer" className="mt-1 block truncate text-xs text-amber-700 underline dark:text-amber-400">
+                <a href={n.source} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} className="mt-1 block truncate text-xs text-amber-700 underline dark:text-amber-400">
                   internal wiki · {new URL(n.source).pathname}
                 </a>
               )}
