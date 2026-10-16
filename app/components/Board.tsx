@@ -115,7 +115,7 @@ export default function Board({ board, pending, onSelect, selected, onActivate }
               tabIndex={0}
               aria-label={
                 n.front
-                  ? `${n.revived ? "Revived idea: " : ""}${n.loose ? "Unconnected idea: " : ""}${n.label}.${n.unseen ? ` ${n.unseen} new cards on a hidden branch.` : ""} Show history`
+                  ? `${n.loose ? "Unconnected idea: " : ""}${n.label}.${n.unseen ? ` ${n.unseen} new cards on a hidden branch.` : ""} Show history`
                   : `${n.deprecated ? "Old idea" : "Other branch"}: ${n.label}.${n.unseen ? ` ${n.unseen} new cards.` : ""} Continue brainstorming on it`
               }
               onClick={act}
@@ -153,9 +153,7 @@ export default function Board({ board, pending, onSelect, selected, onActivate }
                   </motion.p>
                 )}
               </AnimatePresence>
-              {n.revived && (
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400">Revived idea · building on this branch</p>
-              )}
+
               <p className="text-[15px] font-medium leading-5">{n.label}</p>
               {n.quote && n.kind !== "fact" && (
                 <p className="mt-1 line-clamp-2 text-xs italic leading-4 text-zinc-600 dark:text-zinc-400">“{n.quote}”</p>

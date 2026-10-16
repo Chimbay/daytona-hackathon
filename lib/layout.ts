@@ -19,7 +19,7 @@ export type Placed = BoardNode & {
   oy: number; //   its parent card's spot, so branches sprout from the card they hang off
   front: boolean;
   deprecated: boolean; // a replaced version peeking from behind
-  revived: boolean; // a replaced version the group went back to and is building on again
+
   pending: boolean;
   unseen: number; // cards the hidden branch(es) grew while out of view
   loose: boolean; // didn't match any idea yet: floats around the tree until it's linked
@@ -41,7 +41,7 @@ export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set
     const isPending = pending.has(f.id);
     const hidden = rest.reduce((sum, v) => sum + unseen(board, v), 0);
     const loose = floating.has(f.id);
-    const extra = (isPending ? 1 : 0) + (f.supersededBy ? 1 : 0) + (hidden ? 1 : 0) + (loose ? 1 : 0);
+    const extra = (isPending ? 1 : 0) + (hidden ? 1 : 0) + (loose ? 1 : 0);
     const h = nodeHeight(f, extra);
     return { id: f.id, front: f, behind, pending: isPending, unseen: hidden, loose, h, boxH: h + behind.length * PEEK };
   });
@@ -90,7 +90,7 @@ export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set
     const { x, y } = anchors.get(c.id)!;
     const o = parentOf.get(c.id) ?? { x, y };
     return [
-      { ...c.front, h: c.h, x, y, w: NODE_W, z: MAX_BEHIND + 1, ox: o.x, oy: o.y, front: true, deprecated: false, revived: !!c.front.supersededBy, pending: c.pending, unseen: c.unseen, loose: c.loose },
+      { ...c.front, h: c.h, x, y, w: NODE_W, z: MAX_BEHIND + 1, ox: o.x, oy: o.y, front: true, deprecated: false, pending: c.pending, unseen: c.unseen, loose: c.loose },
       ...c.behind.map((n, i) => ({
         ...n,
         h: c.h,
@@ -102,7 +102,7 @@ export function layoutBoard(board: Board, pending: ReadonlySet<string> = new Set
         oy: y,
         front: false,
         deprecated: !!n.supersededBy,
-        revived: false,
+
         pending: false,
         unseen: unseen(board, n),
         loose: false,

@@ -134,6 +134,28 @@ test("edits aimed at a hidden branch keep growing it out of sight and are counte
   assert.equal(unseen(b, b.nodes.find((n) => n.id === "free")!), 0);
 });
 
+test("building on a replaced idea grows it out of sight without switching the view", () => {
+  let b = applyEdits(emptyBoard, [
+    { op: "add", node: idea("goal") },
+    { op: "add", node: idea("free") },
+    { op: "link", from: "goal", to: "free" },
+  ], 1);
+  b = applyEdits(b, [{ op: "supersede", id: "free", node: idea("trial") }], 2);
+  const before = ids(b);
+
+  // "For the free tier we could cap it at 5 seats": the brain links the new card from the hidden version.
+  b = applyEdits(b, [{ op: "add", node: idea("cap") }, { op: "link", from: "free", to: "cap" }], 3);
+  b = applyEdits(b, [{ op: "update", id: "free", label: "Free tier, small teams" }], 4);
+  assert.deepEqual(ids(b), before);
+  const [front, old] = stacks(b).find((s) => s[0].id === "trial")!;
+  assert.equal(front.id, "trial");
+  assert.equal(unseen(b, old), 1);
+
+  // Only the user switches; then the card is there.
+  b = activate(b, "free", 5);
+  assert.deepEqual(ids(b), ["cap", "free", "goal"]);
+});
+
 test("unlinked ideas are loose until something links them; the topic never is", () => {
   let b = applyEdits(emptyBoard, [{ op: "add", node: idea("topic") }], 1);
   assert.deepEqual([...looseIds(b)], []);
