@@ -11,6 +11,7 @@ import { after } from "next/server";
 import { factEdits } from "@/lib/board";
 import { recordEdits, validSessionId } from "@/lib/memory";
 import { answer, type Answer } from "@/lib/research";
+import { flushTraces, setOutput, withSpan } from "@/lib/tracing";
 
 export const maxDuration = 60;
 
@@ -49,6 +50,27 @@ export async function POST(req: Request) {
   const wiki = process.env.WIKI_URL;
   if (!wiki) return Response.json({ error: "WIKI_URL not set" }, { status: 500 });
 
+  after(flushTraces);
+  return withSpan("research", "TOOL", { question }, async (span) => {
+    span.setAttributes({
+      "tool.name": "research",
+      "tool.description": "Look up the internal wiki from a Daytona sandbox via Anchor",
+      "tool.parameters": JSON.stringify({ question: "string" }),
+    });
+    const t0 = Date.now();
+    const res = await research(question, wiki, sessionId, nodeId);
+    const out = await res.clone().json();
+    setOutput(span, out, {
+      "research.duration_ms": Date.now() - t0,
+      "research.status": res.status,
+      "research.fact": out.fact ?? "",
+      "research.source": out.source ?? "",
+    });
+    return res;
+  });
+}
+
+async function research(question: string, wiki: string, sessionId: unknown, nodeId: unknown) {
   const daytona = new Daytona({ apiKey: process.env.DAYTONA_API_KEY, apiUrl: process.env.DAYTONA_API_URL });
   await ensureSecret(daytona);
   const sandbox = await createSandbox(daytona);
