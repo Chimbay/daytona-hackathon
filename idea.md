@@ -1,4 +1,4 @@
-# Live Brainstorm Whiteboard
+# Imaginar
 
 A whiteboard that listens to a group brainstorm and redraws itself to match the idea being discussed. When someone asks a question that needs internal data ("How does our Q3 look?"), an agent looks it up in the team's private sources from an isolated sandbox and pins the answer to the board with its source.
 

@@ -1,4 +1,4 @@
-# Devpost submission: Live Brainstorm Whiteboard
+# Devpost submission: Imaginar
 
 Paste-ready content for https://daytona-hacksprint-nyc.devpost.com/. One section per Devpost field.
 
@@ -8,7 +8,7 @@ Paste-ready content for https://daytona-hacksprint-nyc.devpost.com/. One section
 
 ## Title
 
-**Live Brainstorm Whiteboard**
+**Imaginar**
 
 ## Tagline
 
@@ -16,7 +16,7 @@ A whiteboard that listens to your team think out loud, redraws itself when you c
 
 ## Summary (2–3 sentences)
 
-Live Brainstorm Whiteboard listens to a group brainstorm and keeps a live idea graph in sync with where the conversation is *now*: when the team changes its mind, the old idea is superseded rather than piled on, and the card shows what it replaced. When someone asks a question that needs internal data, Claude flags it, and a research agent in an ephemeral Daytona sandbox drives an Anchor cloud browser through the team's internal wiki, then pins a short answer to the board with its source link. Every idea and fact is stored in SurrealDB Agent Memory with its timestamp, its quote, its speaker and the agent that wrote it, so clicking any card replays how that idea evolved.
+Imaginar listens to a group brainstorm and keeps a live idea graph in sync with where the conversation is *now*: when the team changes its mind, the old idea is superseded rather than piled on, and the card shows what it replaced. When someone asks a question that needs internal data, Claude flags it, and a research agent in an ephemeral Daytona sandbox drives an Anchor cloud browser through the team's internal wiki, then pins a short answer to the board with its source link. Every idea and fact is stored in SurrealDB Agent Memory with its timestamp, its quote, its speaker and the agent that wrote it, so clicking any card replays how that idea evolved.
 
 ## Inspiration / the problem
 

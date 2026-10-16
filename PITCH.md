@@ -56,7 +56,7 @@ Record a live take: the cast talks into the mic and the screen shows the live ca
 
 | # | Time | Shot | Audio / voiceover |
 |---|---|---|---|
-| 1 | 0:00–0:08 | Title card: *Live Brainstorm Whiteboard*, plus the sponsor logos row | VO: "A whiteboard that keeps up with how a group's thinking changes." |
+| 1 | 0:00–0:08 | Title card: *Imaginar*, plus the sponsor logos row | VO: "A whiteboard that keeps up with how a group's thinking changes." |
 | 2 | 0:08–0:15 | Empty board at imagine-lac-xi.vercel.app/board. Open **Fallbacks**, press **Play demo clip** | VO: "It listens through ElevenLabs Scribe realtime. Realtime STT has no speaker labels, so the presenter tags who's talking." |
 | 3 | 0:15–0:35 | Clip lines 1–3: the goal card, then sales reps and referral branch off with a smooth realign | Clip audio |
 | 4 | 0:35–0:50 | Line 4: zoom on the sales-reps card becoming **Self-serve onboarding flow** with "was: Hire two more sales reps" | Clip audio, then VO: "It doesn't append. It supersedes." |
