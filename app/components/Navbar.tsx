@@ -26,7 +26,7 @@ export default function Navbar() {
           href="/"
           className={["rounded-sm font-(family-name:--font-sky-serif) text-2xl font-medium leading-none tracking-[-0.01em]", ink, focus].join(" ")}
         >
-          Imagine
+          Imaginar
         </Link>
 
         <ul className="flex items-center gap-1 text-sm font-medium">

@@ -18,7 +18,7 @@ export function AskSafely({ className = "" }: { className?: string }) {
         <p className={eyebrow}>Ask anything, safely</p>
         <h2 id="ask-title" className={heading}>“How does our Q3 look?”</h2>
         <p className="mt-4 max-w-2xl text-lg leading-relaxed opacity-85">
-          Some questions need the team&apos;s own data. Imagine looks it up in a throwaway sandbox and pins the answer to the board with its source.
+          Some questions need the team&apos;s own data. Imaginar looks it up in a throwaway sandbox and pins the answer to the board with its source.
         </p>
       </Reveal>
 

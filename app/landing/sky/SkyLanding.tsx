@@ -9,9 +9,9 @@ import { sans, serif } from "../../fonts";
 
 
 export const metadata: Metadata = {
-  title: "Imagine — a whiteboard that keeps up with your team",
+  title: "Imaginar — a whiteboard that keeps up with your team",
   description:
-    "Imagine listens to a group brainstorm, redraws the board as the idea changes, and answers internal questions from a throwaway sandbox.",
+    "Imaginar listens to a group brainstorm, redraws the board as the idea changes, and answers internal questions from a throwaway sandbox.",
 };
 
 const calm = { duration: 1.8, ease: [0.22, 1, 0.36, 1] } as const;
@@ -66,7 +66,7 @@ export default function SkyLanding() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...calm, duration: 2.4, delay: 0.35 }}
             >
-              Imagine
+              Imaginar
             </motion.h1>
             <motion.p
               className={`sky-display mt-6 max-w-2xl text-[clamp(1.6rem,4.2vw,2.5rem)] italic leading-tight text-[var(--ink-soft)]`}
@@ -82,7 +82,7 @@ export default function SkyLanding() {
               transition={{ ...calm, duration: 2, delay: 1.3 }}
             >
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--ink-soft)]">
-                Think out loud together. Imagine listens, sketches the idea as it takes shape, and quietly redraws it
+                Think out loud together. Imaginar listens, sketches the idea as it takes shape, and quietly redraws it
                 when the room changes its mind.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -147,7 +147,7 @@ export default function SkyLanding() {
                 <em className="text-[var(--rose)]">The board remembers.</em>
               </h2>
               <p className="mt-6 max-w-md text-lg leading-relaxed text-[var(--ink-soft)]">
-                Most notes only grow. When your team changes its mind, Imagine replaces the old idea instead of piling
+                Most notes only grow. When your team changes its mind, Imaginar replaces the old idea instead of piling
                 the new one beside it, and keeps what it replaced, with who said it and when.
               </p>
             </div>
@@ -211,7 +211,7 @@ export default function SkyLanding() {
 
         <footer className="mx-auto flex max-w-6xl flex-wrap items-baseline justify-between gap-4 px-6 pb-14 pt-10 text-sm text-[var(--ink-faint)] sm:px-10">
           <p>
-            <span className={`sky-display text-xl text-[var(--ink)]`}>Imagine</span> · made at Daytona HackSprint NYC,
+            <span className={`sky-display text-xl text-[var(--ink)]`}>Imaginar</span> · made at Daytona HackSprint NYC,
             October 2026
           </p>
           <a
