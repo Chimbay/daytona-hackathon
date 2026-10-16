@@ -6,6 +6,10 @@
       "headers": {
         "anchor-api-key": "${ANCHOR_API_KEY}"
       }
+    },
+    "motion": {
+      "type": "http",
+      "url": "https://mcp.motion.dev"
     }
   }
 }
