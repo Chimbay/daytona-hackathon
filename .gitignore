@@ -18,3 +18,4 @@ timeline.md
 next-env.d.ts
 .vercel
 npm-debug.log*
+.env*
