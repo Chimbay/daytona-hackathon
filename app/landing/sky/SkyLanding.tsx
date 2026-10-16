@@ -1,19 +1,12 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Cormorant_Garamond, Figtree } from "next/font/google";
 import * as motion from "motion/react-client";
 import { AskSafely, Memory, Problem } from "../sections";
 import { SkyShell } from "./Sky";
 import "./sky.css";
+import { sans, serif } from "../../fonts";
 
-const serif = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal", "italic"],
-  variable: "--font-sky-serif",
-});
-const sans = Figtree({ subsets: ["latin"], variable: "--font-sky-sans" });
 
 export const metadata: Metadata = {
   title: "Imagine — a whiteboard that keeps up with your team",
@@ -58,7 +51,7 @@ export default function SkyLanding() {
       <SkyShell>
         <main>
           {/* Hero */}
-          <section className="mx-auto flex min-h-[92svh] max-w-6xl flex-col justify-center px-6 pb-24 pt-28 sm:px-10">
+          <section className="mx-auto flex min-h-[92svh] max-w-6xl flex-col justify-center px-6 pb-24 pt-12 sm:px-10">
             <motion.p
               className="text-sm uppercase tracking-[0.28em] text-[var(--ink-faint)]"
               initial={{ opacity: 0 }}

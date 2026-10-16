@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Board branch accents: muted dawn-sky hues, one per top-level branch (see lib/layout.ts). */
+:root {
+  --branch-0: #6f7fd6;
+  --branch-1: #3fa596;
+  --branch-2: #d47a8e;
+  --branch-3: #c99a45;
+  --branch-4: #7fa65a;
+  --branch-5: #a07fcf;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --branch-0: #9aa8f0;
+    --branch-1: #6cc9bb;
+    --branch-2: #f0a3b5;
+    --branch-3: #e6bd6e;
+    --branch-4: #a6c983;
+    --branch-5: #c4a6ec;
+  }
+}
