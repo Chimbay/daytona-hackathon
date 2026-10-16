@@ -25,7 +25,7 @@ Pitch angle (prior art covers single-speaker "voice → mind map"): the board tr
 
 ## Status (update as you go)
 
-- No code yet. Renderer: Next.js + dagre + Motion.
+- Next.js 16 (App Router, TS, Tailwind) boilerplate at repo root; `npm run dev`. Renderer: Next.js + dagre + Motion (not installed yet).
 - Verified working: Bedrock (`us.anthropic.claude-haiku-5-5`, `us.anthropic.claude-sonnet-5-5`, us-west-2), Daytona create/exec/delete, Anchor MCP, ElevenLabs realtime token (`POST /v1/single-use-token/realtime_scribe`; key is restricted, `/v1/user` returns 401 — that's fine).
 - Keys in `.env.local`: `AWS_*`, `DAYTONA_API_KEY`, `DAYTONA_API_URL`, `ANCHOR_API_KEY`, `ELEVENLABS_API_KEY`, `SURREAL`, `arize_api` (last two unverified, may need renaming to what their SDKs expect).
 - Unverified: Bedrock model/region access on the lab account; Anchor hostnames beyond `api.anchorbrowser.io` (the browser CDP connection may use another host — check before tightening the Daytona allowlist); Anchor reaching a Daytona preview URL; speaker labels in Scribe realtime mode.
