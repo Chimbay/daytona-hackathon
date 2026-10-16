@@ -1,4 +1,4 @@
-// POST { question } -> { fact, source }
+// POST { question } -> { fact, source, snapshot? }  (snapshot: JPEG data URL of the cited page)
 // The sandbox returns the wiki pages it read; an LLM here (outside the sandbox) picks the page and
 // extracts the fact, falling back to the agent's keyword match if that call fails.
 // Each call gets a fresh ephemeral Daytona sandbox. The Anchor API key is mounted as a Daytona
@@ -80,7 +80,7 @@ async function research(question: string, wiki: string, sessionId: unknown, node
     // secret substitution) goes through Daytona's HTTPS proxy, which Node only uses with NODE_USE_ENV_PROXY.
     const r = await sandbox.process.executeCommand('NODE_USE_ENV_PROXY=1 node agent.mjs "$QUESTION" "$WIKI_URL"', undefined, { QUESTION: question, WIKI_URL: wiki }, 45);
     if (r.exitCode !== 0) return Response.json({ error: `research agent failed: ${r.result.slice(-300)}` }, { status: 502 });
-    const { pages, fallback } = JSON.parse(r.result.trim().split("\n").pop()!);
+    const { pages, snapshots, fallback } = JSON.parse(r.result.trim().split("\n").pop()!);
     let out: Answer;
     try {
       out = await answer(question, pages);
@@ -91,7 +91,7 @@ async function research(question: string, wiki: string, sessionId: unknown, node
     if (!out) return Response.json({ error: "no wiki page answers the question" }, { status: 404 });
     if (validSessionId(sessionId) && typeof nodeId === "string")
       after(() => recordEdits(sessionId, factEdits(nodeId, out.fact, out.source), "research-agent").catch((e) => console.error("memory write failed", e)));
-    return Response.json({ fact: out.fact, source: out.source });
+    return Response.json({ fact: out.fact, source: out.source, snapshot: snapshots?.[out.source] ?? undefined });
   } finally {
     await sandbox.delete().catch(() => {});
   }
