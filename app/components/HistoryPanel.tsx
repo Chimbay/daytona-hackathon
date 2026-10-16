@@ -55,7 +55,7 @@ export default function HistoryPanel({ sessionId, nodeId, onClose }: { sessionId
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "100%", opacity: 0 }}
           transition={{ type: "spring", stiffness: 260, damping: 30 }}
-          className="fixed inset-y-0 right-0 z-20 flex w-full max-w-md flex-col gap-4 overflow-y-auto border-l border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+          className="fixed inset-y-0 right-0 z-[60] flex w-full max-w-md flex-col gap-4 overflow-y-auto border-l border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
