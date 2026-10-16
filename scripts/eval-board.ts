@@ -1,7 +1,8 @@
-// Replays lib/demo-script.ts through boardEdits (the real Bedrock call) and scores each step
+// Replays a script from lib/demo-script.ts through boardEdits (the real Bedrock call) and scores each step
 // against the scripted edits. Board state is teacher-forced: each step sees the expected board so far,
 // so one bad step doesn't cascade and existing ids stay comparable.
-// Usage: node --env-file=.env.local scripts/eval-board.ts
+// Usage: npm run eval [-- demo|clip]. "clip" (the recorded demo clip) is held out: "demo" is also
+// Claude's few-shot in lib/brain.ts, so its score is inflated.
 // With AX=<path to ax CLI> it also uploads a dataset + experiment + per-run scores to Arize.
 import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
@@ -11,7 +12,7 @@ import { join } from "node:path";
 import "../lib/otel.ts"; // trace the eval calls too
 import { applyEdits, emptyBoard, type Board, type Edit } from "../lib/board.ts";
 import { boardEdits, type BrainResult } from "../lib/brain.ts";
-import { demoScript } from "../lib/demo-script.ts";
+import { clipScript, demoScript } from "../lib/demo-script.ts";
 import { flushTraces } from "../lib/tracing.ts";
 
 type Score = { missed: number; invented: number; supersede_ok: number; research_ok: number; pass: number };
@@ -37,9 +38,14 @@ const q = demoScript.find((s) => s.edits.some((e) => e.op === "add" && e.node.ki
 assert.deepEqual(score(q.edits, { edits: q.edits, research: { question: q.text, nodeId: "x" } }), { missed: 0, invented: 0, supersede_ok: 1, research_ok: 1, pass: 1 });
 assert.equal(score(demoScript[3].edits, { edits: [] }).supersede_ok, 0);
 
+const which = process.argv[2] ?? "demo";
+const scripts = { demo: demoScript, clip: clipScript };
+if (!(which in scripts)) throw new Error(`unknown script "${which}", expected: ${Object.keys(scripts).join(" | ")}`);
+const script = scripts[which as keyof typeof scripts];
+
 const rows: { step: number; speaker: string; text: string; expected: Edit[]; got: BrainResult; score: Score }[] = [];
 let board: Board = emptyBoard;
-for (const [i, step] of demoScript.entries()) {
+for (const [i, step] of script.entries()) {
   if (step.speaker !== "Board") {
     const got = await boardEdits(board, { speaker: step.speaker, text: step.text });
     rows.push({ step: i, speaker: step.speaker, text: step.text, expected: step.edits, got, score: score(step.edits, got) });
@@ -52,6 +58,7 @@ for (const [i, step] of demoScript.entries()) {
 const sum = (k: keyof Score) => rows.reduce((a, r) => a + r.score[k], 0);
 const expectedIdeas = rows.reduce((a, r) => a + newIdeas(r.expected).length, 0);
 const summary = {
+  script: which,
   steps: rows.length,
   missed_ideas: `${sum("missed")}/${expectedIdeas}`,
   invented_ideas: sum("invented"),
@@ -69,7 +76,7 @@ if (AX && space) {
   const file = (name: string, data: unknown) => (writeFileSync(join(dir, name), JSON.stringify(data)), join(dir, name));
   const ax = (...args: string[]) => execFileSync(AX, [...args, "--space", space], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   const json = (s: string) => JSON.parse(s.slice(s.search(/[[{]/)));
-  const DATASET = "brainstorm-demo-script";
+  const DATASET = `brainstorm-${which}-script`;
   try {
     ax("datasets", "get", DATASET);
   } catch {
@@ -78,7 +85,7 @@ if (AX && space) {
   }
   const examples: { id: string; additional_properties: { step: number } }[] = json(ax("datasets", "export", DATASET, "--stdout"));
   const exampleId = new Map(examples.map((e) => [Number(e.additional_properties.step), e.id]));
-  const name = `board-edits-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}`;
+  const name = `board-edits-${which}-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}`;
   const runs = rows.map((r) => ({ example_id: exampleId.get(r.step), output: JSON.stringify(r.got) }));
   ax("experiments", "create", "--name", name, "--dataset", DATASET, "--file", file("runs.json", runs));
 
