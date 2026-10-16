@@ -22,7 +22,7 @@ export default function HistoryPanel({ sessionId, nodeId, onClose }: { sessionId
     setState({ loading: true });
     try {
       const res = await fetch(`/api/history?session=${encodeURIComponent(sessionId)}`, { cache: "no-store" });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.error ?? `history ${res.status}`);
       const chain = (json as History).chains.find((c) => c.some((v) => v.id === nodeId));
       if (req === latest.current) setState({ loading: false, chain });

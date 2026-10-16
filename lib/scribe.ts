@@ -46,7 +46,11 @@ export function openScribe(token: string, mode: "mic" | "pcm", h: ScribeHandlers
 export type ScribeConnection = ReturnType<typeof openScribe>;
 
 export function waitForSession(conn: ScribeConnection) {
-  return new Promise<void>((resolve) => conn.on(RealtimeEvents.SESSION_STARTED, () => resolve()));
+  // Rejects if the socket dies first, so a clip replay with a bad token can't hang forever.
+  return new Promise<void>((resolve, reject) => {
+    conn.on(RealtimeEvents.SESSION_STARTED, () => resolve());
+    conn.on(RealtimeEvents.CLOSE, () => reject(new Error("transcription closed before it started")));
+  });
 }
 
 /** Float [-1,1] samples → 16-bit little-endian PCM bytes. */

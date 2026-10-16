@@ -54,8 +54,10 @@ export default function Home() {
     async ({ question, nodeId }: { question: string; nodeId: string }) => {
       note(`Researching: ${question}`);
       setPending((p) => new Set(p).add(nodeId));
+      const s = sid();
       try {
-        const { fact, source, snapshot } = await post<{ fact: string; source: string; snapshot?: string }>("/api/research", { question, sessionId: sid(), nodeId });
+        const { fact, source, snapshot } = await post<{ fact: string; source: string; snapshot?: string }>("/api/research", { question, sessionId: s, nodeId });
+        if (session.current !== s) return; // board was reset while researching
         apply(factEdits(nodeId, fact, source, snapshot));
         note(`Pinned: ${fact}`);
       } catch (e) {
@@ -76,12 +78,14 @@ export default function Home() {
       const line = { speaker: chunk.speaker ?? speakerRef.current, text: chunk.text };
       setLines((l) => [...l, line]);
       queue.current = queue.current.then(async () => {
+        const s = sid();
         try {
           const r = await post<{ edits: Edit[]; research?: { question: string; nodeId: string } }>("/api/board", {
             board: boardRef.current,
             chunk: line,
-            sessionId: sid(),
+            sessionId: s,
           });
+          if (session.current !== s) return; // board was reset while the model was thinking
           apply(r.edits);
           // Research runs alongside later chunks; it only adds its own fact node.
           if (r.research) void research(r.research);
@@ -113,8 +117,19 @@ export default function Home() {
   const playClip = (file: Blob) => {
     reset();
     audio.current = new Audio(URL.createObjectURL(file));
-    void audio.current.play();
+    // Transcription still runs if the browser blocks or can't decode playback.
+    audio.current.play().catch((e: Error) => note(`Clip playback failed: ${e.message}`));
     void startFile(file);
+  };
+
+  const playDemoClip = async () => {
+    try {
+      const res = await fetch("/demo/brainstorm.wav");
+      if (!res.ok) throw new Error(`demo clip ${res.status}`);
+      playClip(await res.blob());
+    } catch (e) {
+      note(`Demo clip unavailable: ${(e as Error).message}`);
+    }
   };
 
   // Offline fallback: scripted lines with their expected edits, no network at all.
@@ -188,7 +203,7 @@ export default function Home() {
           <summary className="cursor-pointer text-xs text-zinc-500">Fallbacks</summary>
           <div className="mt-2 flex flex-col gap-2">
             <button
-              onClick={async () => playClip(await (await fetch("/demo/brainstorm.wav")).blob())}
+              onClick={() => void playDemoClip()}
               className="rounded-lg border px-3 py-2"
             >
               Play demo clip

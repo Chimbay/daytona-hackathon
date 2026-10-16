@@ -25,6 +25,11 @@ async function cdpConnect(url) {
   let id = 0;
   const pending = new Map();
   const waiters = [];
+  // A dropped socket fails in-flight calls now instead of hanging until the sandbox exec timeout.
+  ws.onclose = () => {
+    for (const { fail } of pending.values()) fail(new Error("CDP socket closed"));
+    pending.clear();
+  };
   ws.onmessage = ({ data }) => {
     const m = JSON.parse(data);
     if (m.id && pending.has(m.id)) {
@@ -71,8 +76,9 @@ async function openPage(cdp) {
     },
     async goto(url) {
       const loaded = cdp.once("Page.loadEventFired");
-      await s("Page.navigate", { url });
-      await loaded;
+      const { errorText } = await s("Page.navigate", { url });
+      if (errorText) throw new Error(`navigate ${url}: ${errorText}`);
+      await Promise.race([loaded, new Promise((_, fail) => setTimeout(() => fail(new Error(`load timeout: ${url}`)), 15000).unref())]);
     },
     async eval(expression) {
       const r = await s("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
@@ -95,8 +101,9 @@ export function bestLink(question, links) {
 
 async function research(question, wiki) {
   const { data } = await anchor("POST", "/sessions", { session: { timeout: { max_duration: 3, idle_timeout: 1 } } });
-  const cdp = await cdpConnect(data.cdp_url);
+  let cdp;
   try {
+    cdp = await cdpConnect(data.cdp_url); // inside try so a failed connect still deletes the Anchor session
     const page = await openPage(cdp);
     await page.goto(wiki.replace(/\/?$/, "/"));
     // The wiki is small: fetch every linked page in parallel from inside the browser (same origin,
@@ -110,8 +117,7 @@ async function research(question, wiki) {
     // A visible snippet of each page as Anchor rendered it; the route keeps only the one it cites.
     const snapshots = {};
     for (const p of pages) {
-      await page.goto(p.href);
-      snapshots[p.href] = await page.snapshot().catch(() => null);
+      snapshots[p.href] = await page.goto(p.href).then(() => page.snapshot()).catch(() => null); // snapshot is optional
     }
     const best = pages.find((p) => p.href === bestLink(question, pages));
     return {
@@ -120,7 +126,7 @@ async function research(question, wiki) {
       fallback: best?.fact ? { fact: best.fact, source: best.href } : null,
     };
   } finally {
-    cdp.close();
+    cdp?.close();
     await anchor("DELETE", `/sessions/${data.id}`).catch(() => {});
   }
 }
