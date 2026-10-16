@@ -1,6 +1,7 @@
 import { AnthropicBedrock } from "@anthropic-ai/bedrock-sdk";
 import type { Board, BoardNode, Edit } from "./board.ts";
 import { demoScript } from "./demo-script.ts";
+import { parseJson } from "./errors.ts";
 import { setOutput, withSpan } from "./tracing.ts";
 
 export type Chunk = { speaker?: string; text: string };
@@ -8,7 +9,8 @@ export type Research = { question: string; nodeId: string };
 export type BrainResult = { edits: Edit[]; research?: Research };
 
 const MODEL = process.env.BOARD_MODEL ?? "us.anthropic.claude-sonnet-5-5"; // haiku-5-5 is 403 (marketplace) on the lab account
-const client = new AnthropicBedrock({ awsRegion: process.env.AWS_REGION ?? "us-west-2" });
+// Chunks are processed one at a time, so a hung call would freeze the board: fail fast instead.
+const client = new AnthropicBedrock({ awsRegion: process.env.AWS_REGION ?? "us-west-2", timeout: 15_000, maxRetries: 1 });
 
 // Few-shot: the scripted demo, line by line (minus the research-agent line, which isn't speech).
 const examples = demoScript
@@ -110,8 +112,10 @@ async function callModel(board: Board, chunk: Chunk): Promise<BrainResult> {
     ],
   });
   const text = res.content.find((b) => b.type === "text")?.text;
-  if (!text) return { edits: [] };
-  return validate(JSON.parse(text));
+  const raw = parseJson(text);
+  // Truncated (max_tokens) or malformed output: skip this chunk instead of failing it.
+  if (text && raw === undefined) console.error(`board model returned bad JSON (stop_reason ${res.stop_reason})`);
+  return validate(raw);
 }
 
 // Trust boundary: keep only well-formed edits; applyEdits handles unknown ids.

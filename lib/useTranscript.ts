@@ -8,14 +8,16 @@ export type TranscriptStatus = "idle" | "connecting" | "live" | "error";
 
 async function fetchToken(): Promise<string> {
   const res = await fetch("/api/stt-token", { method: "POST" });
-  const body = await res.json();
+  const body = await res.json().catch(() => ({}));
   if (!res.ok || !body.token) throw new Error(body.error ?? `stt-token ${res.status}`);
   return body.token;
 }
 
 /** Decode any browser-playable audio (File, Blob or URL) to 16 kHz mono PCM16. */
 async function decodeToPcm(src: Blob | string): Promise<Uint8Array> {
-  const buf = await (typeof src === "string" ? (await fetch(src)).arrayBuffer() : src.arrayBuffer());
+  const res = typeof src === "string" ? await fetch(src) : null;
+  if (res && !res.ok) throw new Error(`could not load ${src} (${res.status})`);
+  const buf = await (res ?? (src as Blob)).arrayBuffer();
   const ctx = new AudioContext({ sampleRate: SAMPLE_RATE }); // decodeAudioData resamples to the context rate
   try {
     // shortcut: takes channel 0 only, fine for mono/near-mono recordings
@@ -60,14 +62,19 @@ export function useTranscript(onChunk: (chunk: Chunk) => void) {
       try {
         const [token, pcm] = await Promise.all([fetchToken(), src === "mic" ? null : decodeToPcm(src)]);
         if (ac.signal.aborted) return;
+        // Events from a connection replaced by a later start() (its close fires async) must not
+        // flip the new session's status back to idle/error.
+        const current = () => abort.current === ac;
         const c = openScribe(token, pcm ? "pcm" : "mic", {
-          onChunk: (chunk) => onChunkRef.current(chunk),
-          onPartial: setPartial,
+          onChunk: (chunk) => current() && onChunkRef.current(chunk),
+          onPartial: (t) => current() && setPartial(t),
           onError: (e) => {
-            setError(e instanceof Error ? e.message : JSON.stringify(e));
+            if (!current()) return;
+            // Scribe errors arrive as { message_type, error }.
+            setError(e instanceof Error ? e.message : String((e as { error?: unknown })?.error ?? "transcription error"));
             setStatus("error");
           },
-          onClose: () => setStatus((s) => (s === "error" ? s : "idle")),
+          onClose: () => current() && setStatus((s) => (s === "error" ? s : "idle")),
         }, vad);
         conn.current = c;
         setStatus("live");
@@ -77,7 +84,8 @@ export function useTranscript(onChunk: (chunk: Chunk) => void) {
           setTimeout(() => conn.current === c && stop(), 3000);
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        if (ac.signal.aborted) return; // stopped or restarted: not an error
+        setError((prev) => prev ?? (e instanceof Error ? e.message : String(e))); // keep onError's more specific message
         setStatus("error");
       }
     },

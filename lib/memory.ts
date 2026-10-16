@@ -92,6 +92,7 @@ async function api<T>(method: string, path: string, body?: unknown): Promise<T> 
     headers: { Authorization: `Bearer ${SPECTRON_API_KEY}`, "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
     cache: "no-store",
+    signal: AbortSignal.timeout(10_000), // a hung memory call must not hold the history panel forever
   });
   if (!r.ok && !(method === "POST" && path === "/scopes" && r.status === 409)) {
     throw new Error(`Agent Memory ${method} ${path.split("?")[0]} → ${r.status}: ${(await r.text()).slice(0, 300)}`);

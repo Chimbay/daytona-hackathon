@@ -1,3 +1,4 @@
+import { upstreamError } from "@/lib/errors";
 import { loadHistory, validSessionId } from "@/lib/memory";
 
 // GET ?session=... → each idea's supersede chain (oldest → newest) with timestamps and provenance.
@@ -7,6 +8,6 @@ export async function GET(req: Request) {
   try {
     return Response.json(await loadHistory(session));
   } catch (e) {
-    return Response.json({ error: String(e) }, { status: 502 });
+    return upstreamError("Agent Memory", e);
   }
 }
