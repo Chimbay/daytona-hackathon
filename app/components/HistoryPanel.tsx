@@ -13,17 +13,21 @@ export default function HistoryPanel({ sessionId, nodeId, onClose }: { sessionId
   const [state, setState] = useState<State>({ loading: false });
   const heading = useRef<HTMLHeadingElement>(null);
 
+  const latest = useRef(0);
+
   const load = useCallback(async () => {
     if (!nodeId) return;
+    // Loads take seconds; a slower earlier load must not overwrite the card clicked since.
+    const req = ++latest.current;
     setState({ loading: true });
     try {
       const res = await fetch(`/api/history?session=${encodeURIComponent(sessionId)}`, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? `history ${res.status}`);
       const chain = (json as History).chains.find((c) => c.some((v) => v.id === nodeId));
-      setState({ loading: false, chain });
+      if (req === latest.current) setState({ loading: false, chain });
     } catch (e) {
-      setState({ loading: false, error: (e as Error).message });
+      if (req === latest.current) setState({ loading: false, error: (e as Error).message });
     }
   }, [sessionId, nodeId]);
 
